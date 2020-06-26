@@ -20,7 +20,7 @@ def load_classes(num_classes, df='imagenetA'):
     return wnids.tolist(), indices, descriptions
 
 
-def data_directory():
+def data_directory(subset):
     """
     Check which server we are on and return the corresponding 
     imagenet data directory.
@@ -29,7 +29,7 @@ def data_directory():
     server_num = int(hostname[4:6])
     print(f'server_num = {server_num}')
     if server_num <= 20:
-        imagenet_train = f'/mnt/fast-data{server_num}/datasets/ILSVRC/2012/clsloc/train/'
+        imagenet_dir = f'/mnt/fast-data{server_num}/datasets/ILSVRC/2012/clsloc/{subset}/'
     else:
-        imagenet_train = f'/fast-data{server_num}/datasets/ILSVRC/2012/clsloc/train/'
-    return imagenet_train
+        imagenet_dir = f'/fast-data{server_num}/datasets/ILSVRC/2012/clsloc/{subset}/'
+    return imagenet_dir

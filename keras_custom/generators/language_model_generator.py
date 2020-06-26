@@ -11,10 +11,10 @@ from tensorflow.keras.utils import Sequence
 from tensorflow.keras.preprocessing.image import load_img, img_to_array, apply_affine_transform, apply_channel_shift, apply_brightness_shift
 
 """
-Purpose:
---------
-    14/05/2020: `custom_generator` will produce `generator_for_continuous_master`
-                using the Sequence class here and return the final generator.
+Parent class of language generator.
+
+The specials of lang gen is that we need to generate 
+word vectors as targets on the fly for each train/val batch.
 """
 
 class SafeIterator(Sequence):
@@ -23,7 +23,8 @@ class SafeIterator(Sequence):
         multiprocessing safety
     """
     white_list_formats = ('png', 'jpg', 'jpeg', 'bmp', 'ppm', 'tif', 'tiff')
-    def __init__(self, n, batch_size, shuffle, seed, subsample_weights, all_labels):
+
+    def __init__(self, n, batch_size, shuffle, seed, wordvec_mtx):
         self.n = n
         self.batch_size = batch_size
         self.seed = seed
@@ -33,81 +34,34 @@ class SafeIterator(Sequence):
         self.lock = threading.Lock()
         self.index_array = None
         self.index_generator = self._flow_index()
-
-        # WARNING: which gets overriden in the inherited class using super
-        self._subsample_weights = subsample_weights
-        self._classes = all_labels
-
-        # ----------------------------------
-        # not user provided, init here at the base class.
-        # self.focus_index_this_epoch = None
-        # self.intensity_this_epoch = None
-
-    # subsample in progress
+        #
+        self.wordvec_mtx = wordvec_mtx
+    ############################################################################
     def _set_index_array(self):
-        """
-            1. called every epoch
-            2. all classes are first loaded and than subsampled.
-        """
-        ####################################################################################################
-        subsample_weights = self._subsample_weights  # dict
-        all_labels = self._classes   # list of ints
-        unique_classes = np.unique(all_labels)
-
-        # NOTE: if not, n gets overriden and the entire set isn't the full size
-        index_array = np.arange(len(all_labels))  # n is total num of imgs found
-        print('CHECK: before subsample has [%s] images' % len(index_array))
-
-        subsample_dict = {}
-        for class_i in unique_classes:
-            locs = np.where(all_labels==class_i)
-            subsample_dict[class_i] = index_array[locs]
-
-        # second, subsample based on weights
-        new_index_array = []
-        for class_i in subsample_dict:
-            weight = subsample_weights[class_i]
-            if weight == 1:
-                new_index_array = np.hstack((new_index_array, subsample_dict[class_i]))
-            else:
-                num_in_class = len(subsample_dict[class_i])
-                num_in_subsample = int(np.ceil(weight * num_in_class))
-
-                # NOTE: can't seed because we want different samples each at each epoch
-                subsample = np.random.choice(subsample_dict[class_i], size=num_in_subsample, replace=False)
-                new_index_array = np.hstack((new_index_array, subsample))
-        ####################################################################################################
-
-        new_index_array = np.array([int(i) for i in new_index_array])
-        print('CHECK: subsampled [%s] images ' % len(new_index_array))
+        self.index_array = np.arange(self.n)
         if self.shuffle:
-            new_index_array = np.random.permutation(new_index_array)
-        self.index_array = new_index_array
-        self.n = len(new_index_array)
+            self.index_array = np.random.permutation(self.n)
 
     def compute_step_size(self):
         if self.index_array is None:
-            self._set_index_array()   # # QUESTION:effect?
+            self._set_index_array()   # QUESTION:effect?
         len_of_index_array = len(self.index_array)
         step_size = np.ceil(len_of_index_array / self.batch_size)
         return step_size
 
     def get_epoch_labels(self):
-
         # WARNING: may not be accurate due to separetly calling `_set_index_array`
         # WARNING: will result in changing the index array due to random choice.
-
         # original labels for all before subsample
         all_labels = self._classes
         if self.index_array is None:
             self._set_index_array()
         epoch_labels = all_labels[self.index_array]
         return epoch_labels
-    ############################################################################
 
     def __getitem__(self, idx):
         """
-        Called every batch.
+        this is called every batch
         """
         if idx >= len(self):
             raise ValueError('Asked to retrieve element {idx}, '
@@ -121,11 +75,11 @@ class SafeIterator(Sequence):
             self._set_index_array()
         index_array = self.index_array[self.batch_size * idx:
                                        self.batch_size * (idx + 1)]
-        # print('***** __getitem__ idx = ', idx)
-        return self._get_batches_of_transformed_samples(index_array)
+
+        # REVIEW: wordvec_mtx: must do self. otherwise undefined because of __getitem__
+        return self._get_batches_of_transformed_samples(index_array, self.wordvec_mtx)
 
     def __len__(self):
-        # consistent with len(new_index_array)
         return (self.n + self.batch_size - 1) // self.batch_size  # round up
 
     def on_epoch_end(self):
@@ -135,7 +89,7 @@ class SafeIterator(Sequence):
         self.batch_index = 0
 
     def _flow_index(self):
-        print('((((((((( _flow_index )))))))))')
+        print('****** _flow_index never called.')
         self.reset()
         while 1:
             if self.seed is not None:
@@ -144,7 +98,6 @@ class SafeIterator(Sequence):
                 self._set_index_array()
 
             if self.n == 0:
-                # Avoiding modulo by zero error
                 current_index = 0
             else:
                 current_index = (self.batch_index * self.batch_size) % self.n
@@ -162,6 +115,7 @@ class SafeIterator(Sequence):
         return self
 
     def __next__(self, *args, **kwargs):
+        print('******** __next__ is never called.')
         return self.next(*args, **kwargs)
 
     def next(self):
@@ -169,19 +123,24 @@ class SafeIterator(Sequence):
         # Returns
             The next batch.
         """
+        print('next is never called.')
+
         with self.lock:
+
             index_array = next(self.index_generator)
         # The transformation of images is not under thread lock
         # so it can be done in parallel
+        print('***** _get******transformed_samples called in next(self)')
         return self._get_batches_of_transformed_samples(index_array)
 
-    def _get_batches_of_transformed_samples(self, index_array):
+    def _get_batches_of_transformed_samples(self, index_array, wordvec_mtx):
         """Gets a batch of transformed samples.
         # Arguments
             index_array: Array of sample indices to include in batch.
         # Returns
             A batch of transformed samples.
         """
+        print('_get_batches_of_transformed_samples called.')
         raise NotImplementedError
 
 
@@ -210,7 +169,7 @@ class SafeDirectoryIterator(SafeIterator):
                  follow_links=False,
                  subset=None,
                  interpolation='nearest',
-                 dtype=None,                                                    # WARNING:  original is 32
+                 dtype=None,  # WARNING:  original is 32
                  featurewise_center=False,
                  samplewise_center=False,
                  featurewise_std_normalization=False,
@@ -232,19 +191,8 @@ class SafeDirectoryIterator(SafeIterator):
                  preprocessing_function=None,
                  validation_split=0.0,
                  interpolation_order=1,
-                 # ---------------------------
-                 focus_classes=None,
-                 subsample_rate=1,
-                 ### for continuous master ###
-                 focus_indices=None,
-                 intensities=None,
-                 focus_index_this_epoch = None,
-                 intensity_this_epoch = None,
-                 ### for batch Momentum ###
-                 prev_focus_index=None,
-                 current_focus_index_seen=0,
-                 batchMomentum=1,
-                 # ---------------------------
+                 # load in wordvec mtx
+                 wordvec_mtx=None,
                  ):
 
         if color_mode not in {'rgb', 'rgba', 'grayscale'}:
@@ -317,6 +265,7 @@ class SafeDirectoryIterator(SafeIterator):
         self.rescale = rescale
         self.preprocessing_function = preprocessing_function
         self.dtype = dtype
+        self.wordvec_mtx = wordvec_mtx
 
         # --------------------------------------------------------
         if dtype is None:
@@ -394,23 +343,6 @@ class SafeDirectoryIterator(SafeIterator):
 
         #### End of code from previous ImageDataGenerator ####
         ########################################################################
-
-
-        ################
-        self.focus_indices = focus_indices
-        self.intensities = intensities
-        self.focus_index_this_epoch = focus_index_this_epoch
-        self.intensity_this_epoch = intensity_this_epoch
-        self.prev_focus_index = prev_focus_index
-        self.current_focus_index_seen = current_focus_index_seen
-        self.batchMomentum = batchMomentum
-        # ----------------------------------
-        self.focus_classes = focus_classes
-        self.subsample_rate = subsample_rate
-        # can be none or
-        # a list of wnids: focus_classes = ['n01234']
-        ################
-
         if class_mode not in self.allowed_class_modes:
             raise ValueError('Invalid class_mode: {}; expected one of: {}'
                              .format(class_mode, self.allowed_class_modes))
@@ -435,23 +367,6 @@ class SafeDirectoryIterator(SafeIterator):
         # mapping from wnid to class indices as integers
         self.class_indices = dict(zip(classes, range(len(classes))))
 
-        ########################################################################
-        # subsample_weights
-        subsample_weights = {}
-        if self.focus_classes is None:
-            for wnid in self.class_indices:
-                subsample_weights[self.class_indices[wnid]] = 1.
-
-        else:
-            for wnid in self.class_indices:
-                if wnid in self.focus_classes:
-                    # the focus classes don't subsample or downweight
-                    subsample_weights[self.class_indices[wnid]] = 1.
-                else:
-                    # out of context will be subsampled.
-                    # when subsample_rate = 0, is same as not using out context at all
-                    subsample_weights[self.class_indices[wnid]] = self.subsample_rate
-        ########################################################################
 
         pool = multiprocessing.pool.ThreadPool()
 
@@ -487,15 +402,13 @@ class SafeDirectoryIterator(SafeIterator):
             os.path.join(self.directory, fname) for fname in self.filenames
         ]
 
-        ####### self.samples = self.n in upper class #######
         super(SafeDirectoryIterator, self).__init__(self.samples,
                                                     batch_size,
                                                     shuffle,
                                                     seed,
-                                                    subsample_weights,
-                                                    self.classes,
-                                                    # -----------------
+                                                    wordvec_mtx
                                                     )
+
     @property
     def filepaths(self):
         return self._filepaths
@@ -509,7 +422,7 @@ class SafeDirectoryIterator(SafeIterator):
         # no sample weights will be returned
         return None
 
-    def _get_batches_of_transformed_samples(self, index_array):
+    def _get_batches_of_transformed_samples(self, index_array, wordvec_mtx):
         """Gets a batch of transformed samples.
         # Arguments
             index_array: Array of sample indices to include in batch.
@@ -549,12 +462,10 @@ class SafeDirectoryIterator(SafeIterator):
         # build batch of labels
         if self.class_mode == 'input':
             batch_y = batch_x.copy()
-
         elif self.class_mode in {'binary', 'sparse'}:
             batch_y = np.empty(len(batch_x), dtype=self.dtype)
             for i, n_observation in enumerate(index_array):
                 batch_y[i] = self.classes[n_observation]
-
         elif self.class_mode == 'categorical':
             batch_y = np.zeros((len(batch_x), len(self.class_indices)),
                                dtype=self.dtype)
@@ -566,54 +477,16 @@ class SafeDirectoryIterator(SafeIterator):
             batch_y = self.labels[index_array]
         else:
             return batch_x
-
-
-        ###### build second and third input to attention factory ###############
-        # a random context pair is sampled for a batch
-        self.intensity_this_epoch = np.random.choice(self.intensities, size=1, replace=True)
-        # self.focus_index_this_epoch = np.random.choice(self.focus_indices, size=1, replace=True)
-
-        if self.prev_focus_index == None:
-            # getting started, sample at random
-            self.focus_index_this_epoch = np.random.choice(self.focus_indices, size=1, replace=True)
-            self.prev_focus_index = self.focus_index_this_epoch
-            self.current_focus_index_seen += 1
-        elif self.current_focus_index_seen < self.batchMomentum-1:
-            # keep using the same index
-            self.focus_index_this_epoch = self.prev_focus_index
-            self.current_focus_index_seen += 1
-        else:
-            # keep seeing the same index for 3 batches, sample random again
-            # and reset counter
-            
-            # we want make sure the next 3 batches do not repeat the previous 3 batches
-            # even if the next 3 are sampled at random. so if still the same, we sample again
-            # until we get something different (hence while-loop)
-            while self.focus_index_this_epoch == self.prev_focus_index:
-                self.focus_index_this_epoch = np.random.choice(self.focus_indices, size=1, replace=True)
-            self.prev_focus_index = self.focus_index_this_epoch
-            self.current_focus_index_seen = 0
         
-        # print('\n*** focus_index_this_epoch = ', self.focus_index_this_epoch)
-        # print('*** prev_index = ', self.prev_focus_index)
-        # print('*** current counter = ', self.current_focus_index_seen)
-        # print('\n')
+        ###
+        ### Use Nick's trick to index word vectors
+        ###
+        batch_y = [np.dot(batch_y, wordvec_mtx), batch_y]
 
-        # NOTE: v2 - prior is the Brad prior; intensity in (?, 1)
-        # NOTE/TEMP: for adv training, the context size is always 1000 if to match ICML
-        # the only difference is focus_indices are among 200 not 1000 classes. 
-        non_trg_int = (1 - self.intensity_this_epoch) / 999
-        prior = np.ones((batch_x.shape[0], 1000)) * non_trg_int
-        prior[:, self.focus_index_this_epoch] = self.intensity_this_epoch
-
-        intensity_this_epoch = np.ones((batch_x.shape[0], 1)) * self.intensity_this_epoch
-        batch_x = [batch_x, prior, intensity_this_epoch]
-        ########################################################################
         if self.sample_weight is None:
             return batch_x, batch_y
         else:
             return batch_x, batch_y, self.sample_weight[index_array]
-
     ############################################################################
     #### Below are methods in previous ImageDataGenerator ####
     def standardize(self, x):
@@ -741,8 +614,6 @@ class SafeDirectoryIterator(SafeIterator):
         if self.brightness_range is not None:
             brightness = np.random.uniform(self.brightness_range[0],
                                            self.brightness_range[1])
-
-
 
         ########################################################################
         # pca_augment parameters

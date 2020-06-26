@@ -23,7 +23,12 @@ from tensorflow.keras.layers import Layer, Flatten, Reshape, Dense, \
 The Language Model
 """
 
-def lang_model(seed=42):
+def lang_model(num_labels=1000, seed=42):
+     """
+     inputs:
+     ------
+          num_labels: label output layer size
+     """
      vgg = VGG16(weights='imagenet', include_top=True, input_shape=(224, 224, 3))
      x = vgg.input
      # [1,-2] means skip input layer and stop at last FC.
@@ -39,10 +44,11 @@ def lang_model(seed=42):
                kernel_initializer=keras.initializers.glorot_normal(seed=seed))(x)
 
      # attach discrete label layer.
-     label_output = Dense(1000, activation='softmax', name='label_output',
+     label_output = Dense(num_labels, activation='softmax', name='label_output',
                kernel_initializer=keras.initializers.glorot_normal(seed=seed))(semantic_intermediate)
 
      model = Model(inputs=vgg.input, outputs=[semantic_output, label_output])
+     return model
 
      #from tensorflow.keras.utils import plot_model
      #plot_model(model, to_file='lang_model.png')
