@@ -4,6 +4,7 @@
 .npy
 trained_weights/
 log/
+*.out
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
