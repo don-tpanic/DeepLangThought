@@ -20,16 +20,18 @@ def load_classes(num_classes, df='imagenetA'):
     return wnids.tolist(), indices, descriptions
 
 
-def data_directory(subset):
+def data_directory(part):
     """
     Check which server we are on and return the corresponding 
     imagenet data directory.
+
+    part: partition - either train or val or val_white
     """
     hostname = socket.gethostname()
     server_num = int(hostname[4:6])
     print(f'server_num = {server_num}')
     if server_num <= 20:
-        imagenet_dir = f'/mnt/fast-data{server_num}/datasets/ILSVRC/2012/clsloc/{subset}/'
+        imagenet_dir = f'/mnt/fast-data{server_num}/datasets/ILSVRC/2012/clsloc/{part}'
     else:
-        imagenet_dir = f'/fast-data{server_num}/datasets/ILSVRC/2012/clsloc/{subset}/'
+        imagenet_dir = f'/fast-data{server_num}/datasets/ILSVRC/2012/clsloc/{part}'
     return imagenet_dir

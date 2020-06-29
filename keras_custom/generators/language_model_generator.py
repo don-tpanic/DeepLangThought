@@ -481,7 +481,9 @@ class SafeDirectoryIterator(SafeIterator):
         ###
         ### Use Nick's trick to index word vectors
         ###
-        batch_y = [np.dot(batch_y, wordvec_mtx), batch_y]
+
+        #batch_y = [np.dot(batch_y, wordvec_mtx), batch_y]
+        batch_y = [np.dot(batch_y, wordvec_mtx)]
 
         if self.sample_weight is None:
             return batch_x, batch_y
