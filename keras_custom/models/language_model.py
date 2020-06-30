@@ -66,7 +66,7 @@ def lang_model_semantic(num_labels=1000, seed=42):
      """
      vgg = VGG16(weights='imagenet', include_top=True, input_shape=(224, 224, 3))
      # load fine tuned weights:
-     vgg.load_weights('trained_weights/VGG16_finetuned_fullmodelWeights.h5')
+     vgg.load_weights('_trained_weights/VGG16_finetuned_fullmodelWeights.h5')
      print('loaded in fine tuned VGG16 weights.')
 
      x = vgg.input
