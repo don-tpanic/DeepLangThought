@@ -20,7 +20,7 @@ def load_classes(num_classes, df='imagenetA'):
     return wnids.tolist(), indices, descriptions
 
 
-def data_directory(part='train'):
+def data_directory(part):
     """
     Check which server we are on and return the corresponding 
     imagenet data directory.
