@@ -483,10 +483,10 @@ class SafeDirectoryIterator(SafeIterator):
         ###
 
         # TODO: provide attribute for choosing different models.
-
         #batch_y = [np.dot(batch_y, wordvec_mtx), batch_y]
         #batch_y = [np.dot(batch_y, wordvec_mtx)]
-        # do nothing if discrete output.
+
+        # NOTE: do nothing if discrete output.
 
         if self.sample_weight is None:
             return batch_x, batch_y

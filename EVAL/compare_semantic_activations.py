@@ -8,9 +8,9 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras.applications.vgg16 import preprocess_input
 
-from keras_custom.generators.generator_wrappers import lang_gen, simple_generator
-from keras_custom.models.language_model import lang_model_semantic
+from keras_custom.generators.generator_wrappers import simple_generator
 from EVAL.utils.data_utils import data_directory, load_classes
+from EVAL.utils.model_utils import ready_model
 
 """
 Use methods such as tNSE 
@@ -18,32 +18,7 @@ Use methods such as tNSE
 
 To do that we want to grab activations from the semantic layer
 in both the semantic model and the discrete model.
-"""
-
-def ready_model(model_type):
-    """
-    1. Load in a specified model and intersect the activation after the 
-    semantic layer (either output or intermediate)
-    """
-    # model
-    if model_type == 'semantic':
-        model = lang_model_semantic()
-        # weights look like [kernel(4096,768), bias(768,)]
-        trained_weights = np.load('_trained_weights/semantic_output_weights=29-06-20.npy',
-                                allow_pickle=True)
-        model.get_layer('semantic_output').set_weights([trained_weights[0], trained_weights[1]])
-    elif model_type == 'discrete':
-        pass
-        # TODO: load in intermediate trained weights
-        # TODO: intersect model at intermediate layer
-
-    print(f'compiling {model_type} model...')
-    model.compile(tf.keras.optimizers.Adam(lr=3e-5),
-                  loss=[tf.keras.losses.MSE],
-                  metrics='mean_squared_error',
-                  )
-    return model
-    
+"""    
 
 def grab_activations(model, part, version, model_type):
     """
@@ -69,20 +44,6 @@ def grab_activations(model, part, version, model_type):
     for i in range(len(wnids)):
         wnid = wnids[i]
         category = categories[i]
-
-        # gen, steps = lang_gen(
-        #                 directory=directory,
-        #                 classes=[wnid],
-        #                 batch_size=16,
-        #                 seed=42,
-        #                 shuffle=True,
-        #                 subset=None,
-        #                 validation_split=0,
-        #                 class_mode='categorical',  # only used for lang due to BERT indexing
-        #                 target_size=(224, 224),
-        #                 preprocessing_function=preprocess_input,
-        #                 horizontal_flip=False, 
-        #                 wordvec_mtx=wordvec_mtx)
 
         gen, steps = simple_generator(
                         directory=directory,
@@ -179,7 +140,7 @@ def run_tsne(version, model_type):
 
 def execute():
     ######################
-    model_type = 'semantic'
+    model_type = 'discrete'
     part = 'val_white'
     version = '29-06-20'
     print('### compare semantic activations ###')
@@ -189,7 +150,7 @@ def execute():
     print('------------------------------------')
     ######################
 
-    # model = ready_model(model_type=model_type)
+    # model = ready_model(model_type=model_type, version=version)
 
     # grab_activations(model=model, 
     #                  part=part, 

@@ -9,7 +9,7 @@ import pandas as pd
 import tensorflow as tf
 from tensorflow.keras.applications.vgg16 import preprocess_input
 
-from keras_custom.models.language_model import lang_model_semantic
+from keras_custom.models.language_model import lang_model_semantic, lang_model_discrete
 from keras_custom.generators.generator_wrappers import lang_gen
 from EVAL.utils.data_utils import data_directory
 
@@ -41,10 +41,14 @@ def model_n_data(model_type, version, part):
                   )
     
     elif model_type == 'discrete':
-        pass
-        # TODO: load weights
-        # TODO: compile with CE loss.
-
+        model = lang_model_discrete()
+        trained_weights = np.load(f'_trained_weights/semantic_intermediate_weights={version}.npy',
+                                allow_pickle=True)
+        model.get_layer('semantic_intermediate').set_weights([trained_weights[0], trained_weights[1]])
+        model.compile(tf.keras.optimizers.Adam(lr=3e-5),
+                  loss='categorical_crossentropy',
+                  metrics=['acc', 'top_k_categorical_accuracy'],
+                  )
     
     # test data
     wordvec_mtx = np.load('data_local/imagenet2vec/imagenet2vec_1k.npy')
@@ -69,7 +73,7 @@ def model_n_data(model_type, version, part):
 
 def execute():
     ###########################
-    model_type = 'semantic'
+    model_type = 'discrete'
     version = '29-06-20'
     part = 'val_white'
     ###########################

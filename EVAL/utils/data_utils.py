@@ -35,3 +35,5 @@ def data_directory(part):
     else:
         imagenet_dir = f'/fast-data{server_num}/datasets/ILSVRC/2012/clsloc/{part}'
     return imagenet_dir
+
+
