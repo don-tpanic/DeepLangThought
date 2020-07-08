@@ -13,7 +13,7 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.applications.vgg16 import preprocess_input
 from tensorflow.keras.callbacks import TensorBoard, EarlyStopping
 
-from keras_custom.models.language_model import lang_model_discrete, lang_model_semantic
+from keras_custom.models.language_model import lang_model
 from keras_custom.generators.generator_wrappers import lang_gen
 from TRAIN.utils.data_utils import load_classes, data_directory
 
@@ -58,16 +58,16 @@ def specific_callbacks(run_name):
     return earlystopping, tensorboard
 
 
-def execute_discrete_labelling(run_name='discrete_labelling'):
-    model = lang_model_discrete()
-    model.compile(Adam(lr=3e-5),
-                  loss='categorical_crossentropy',
-                  metrics=['acc', 'top_k_categorical_accuracy'],
-                  )
+def execute():
+
+    # model compiled at definition
+    model = lang_model()
     
+    # data
     train_gen, train_steps = train_n_val_data_gen(subset='training')
     val_gen, val_steps = train_n_val_data_gen(subset='validation')
 
+    # callbacks and fitting
     earlystopping, tensorboard = specific_callbacks(run_name=run_name)
     model.fit(train_gen,
                 epochs=500, 
@@ -79,33 +79,7 @@ def execute_discrete_labelling(run_name='discrete_labelling'):
                 max_queue_size=40, workers=3, 
                 use_multiprocessing=False)
     
+    # save weights
     semantic_intermediate_ws = model.get_layer('semantic_intermediate').get_weights()
     np.save('_trained_weights/semantic_intermediate_weights.npy', semantic_intermediate_ws)
-    print('weights saved.')
-
-
-def execute_semantic_only(run_name='semantic_output_only', version='1-7-20'):
-    model = lang_model_semantic()
-    model.compile(Adam(lr=3e-5),
-                  loss=[tf.keras.losses.MSE],
-                  metrics='mean_squared_error',
-                  )
-    
-    train_gen, train_steps = train_n_val_data_gen(subset='training')
-    val_gen, val_steps = train_n_val_data_gen(subset='validation')
-
-    run_name = run_name + version
-    earlystopping, tensorboard = specific_callbacks(run_name=run_name)
-    model.fit(train_gen,
-                epochs=500, 
-                verbose=1, 
-                callbacks=[earlystopping, tensorboard],
-                validation_data=val_gen, 
-                steps_per_epoch=train_steps,
-                validation_steps=val_steps, 
-                max_queue_size=40, workers=3, 
-                use_multiprocessing=False)
-    
-    semantic_output_ws = model.get_layer('semantic_output').get_weights()
-    np.save(f'_trained_weights/semantic_output_weights={version}.npy', semantic_output_ws)
     print('weights saved.')

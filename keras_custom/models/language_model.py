@@ -21,6 +21,7 @@ The Language Models
 """
 
 # temp: only has discrete labelling output
+# TODO: deprecate once ALL-in-ONE model is complete
 def lang_model_discrete(num_labels=1000, seed=42):
      """
      inputs:
@@ -58,6 +59,7 @@ def lang_model_discrete(num_labels=1000, seed=42):
 
 
 # temp: only has semantic output.
+# TODO: deprecate once ALL-in-ONE model is complete
 def lang_model_semantic(num_labels=1000, seed=42):
      """
      inputs:
@@ -89,8 +91,48 @@ def lang_model_semantic(num_labels=1000, seed=42):
      return model
 
 
-if __name__ == '__main__':
-     # lang_model_discrete()
 
-     lang_model_semantic()
+def lang_model(num_labels=1000, seed=42):
+     """
+     One model has both semantic layer and discrete layer
+     with the discrete layer being the output layer.
+
+     The idea is that loss is composed of both semantic output 
+     and discrete output.
+
+     inputs:
+     ------
+          num_labels: label output layer size
+     """
+     vgg = VGG16(weights='imagenet', include_top=True, input_shape=(224, 224, 3))
+     # load fine tuned weights:
+     vgg.load_weights('_trained_weights/VGG16_finetuned_fullmodelWeights.h5')
+     print('loaded in fine tuned VGG16 weights.')
+
+     x = vgg.input
+     # [1,-2] means skip input layer and stop at last FC.
+     # we can change the last num to free up more layers.
+     for layer in vgg.layers[1:-1]:
+          layer.trainable = False
+          x = layer(x)
+
+     semantic_output = Dense(768, activation='sigmoid', name='semantic',
+               kernel_initializer=keras.initializers.glorot_normal(seed=seed))(x)
+
+     discrete_output = Dense(num_labels, activation='softmax', name='discrete',
+               kernel_initializer=keras.initializers.glorot_normal(seed=seed))(semantic_output)
+
+     model = Model(inputs=vgg.input, outputs=[semantic_output, discrete_output])
+     model.compile(Adam(lr=3e-5),
+                  loss=['mse', 'categorical_crossentropy'],
+                  loss_weights=[1, 0],
+                  metrics=['acc'],
+                  )
+     model.summary()
+     #plot_model(model, to_file='lang_model.png')
+     return model
+
+
+if __name__ == '__main__':
+     lang_model()
 

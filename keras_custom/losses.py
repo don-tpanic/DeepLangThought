@@ -1,11 +1,8 @@
-from tensorflow.keras import losses
-from tensorflow.keras import backend as K
+import tensorflow as tf
 
 """
 Custom losses
 """
 
-def pearson_loss(y_true, y_pred):
-    cov = K.mean((y_true - K.mean(y_true)) * (y_pred - K.mean(y_pred)))
-    rho = cov / (K.std(y_true) * K.std(y_pred))
-    return 1 - rho
+def reconstruction(y_true, y_pred):
+    return tf.keras.losses.MSE(y_true, y_pred)
