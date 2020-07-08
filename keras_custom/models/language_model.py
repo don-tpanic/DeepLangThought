@@ -80,10 +80,17 @@ def lang_model_semantic(num_labels=1000, seed=42):
                kernel_initializer=keras.initializers.glorot_normal(seed=seed))(x)
 
      model = Model(inputs=vgg.input, outputs=semantic_output)
+
+     # TODO: free FC2
+     model.get_layer('fc2').trainable = True
+
+
      model.summary()
      return model
 
 
 if __name__ == '__main__':
-     lang_model_discrete()
+     # lang_model_discrete()
+
+     lang_model_semantic()
 

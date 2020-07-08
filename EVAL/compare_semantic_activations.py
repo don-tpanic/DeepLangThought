@@ -140,9 +140,9 @@ def run_tsne(version, model_type):
 
 def execute():
     ######################
-    model_type = 'discrete'
+    model_type = 'semantic'
     part = 'val_white'
-    version = '29-06-20'
+    version = '1-7-20'
     print('### compare semantic activations ###')
     print(f'model: {model_type}')
     print(f'version: {version}')
@@ -150,11 +150,11 @@ def execute():
     print('------------------------------------')
     ######################
 
-    # model = ready_model(model_type=model_type, version=version)
+    model = ready_model(model_type=model_type, version=version)
 
-    # grab_activations(model=model, 
-    #                  part=part, 
-    #                  version=version, 
-    #                  model_type=model_type)
+    grab_activations(model=model, 
+                     part=part, 
+                     version=version, 
+                     model_type=model_type)
 
     run_tsne(version, model_type)

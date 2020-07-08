@@ -73,8 +73,8 @@ def model_n_data(model_type, version, part):
 
 def execute():
     ###########################
-    model_type = 'discrete'
-    version = '29-06-20'
+    model_type = 'semantic'
+    version = '1-7-20'
     part = 'val_white'
     ###########################
     model, gen, steps = model_n_data(model_type=model_type, 

@@ -13,7 +13,7 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.applications.vgg16 import preprocess_input
 from tensorflow.keras.callbacks import TensorBoard, EarlyStopping
 
-from keras_custom.models.language_model import lang_model_discrete
+from keras_custom.models.language_model import lang_model_discrete, lang_model_semantic
 from keras_custom.generators.generator_wrappers import lang_gen
 from TRAIN.utils.data_utils import load_classes, data_directory
 
@@ -84,7 +84,7 @@ def execute_discrete_labelling(run_name='discrete_labelling'):
     print('weights saved.')
 
 
-def execute_semantic_only(run_name='semantic_output_only'):
+def execute_semantic_only(run_name='semantic_output_only', version='1-7-20'):
     model = lang_model_semantic()
     model.compile(Adam(lr=3e-5),
                   loss=[tf.keras.losses.MSE],
@@ -94,6 +94,7 @@ def execute_semantic_only(run_name='semantic_output_only'):
     train_gen, train_steps = train_n_val_data_gen(subset='training')
     val_gen, val_steps = train_n_val_data_gen(subset='validation')
 
+    run_name = run_name + version
     earlystopping, tensorboard = specific_callbacks(run_name=run_name)
     model.fit(train_gen,
                 epochs=500, 
@@ -106,5 +107,5 @@ def execute_semantic_only(run_name='semantic_output_only'):
                 use_multiprocessing=False)
     
     semantic_output_ws = model.get_layer('semantic_output').get_weights()
-    np.save('_trained_weights/semantic_output_weights.npy', semantic_output_ws)
+    np.save(f'_trained_weights/semantic_output_weights={version}.npy', semantic_output_ws)
     print('weights saved.')
