@@ -16,6 +16,8 @@ from tensorflow.keras.applications.vgg16 import VGG16
 from tensorflow.keras.layers import Layer, Flatten, Reshape, Dense, \
      Dropout, Input, Multiply, Dot, Concatenate, BatchNormalization
 
+#from keras_custom.metrics import totalLoss
+
 """
 The Language Models
 """
@@ -92,7 +94,7 @@ def lang_model_semantic(num_labels=1000, seed=42):
 
 
 
-def lang_model(num_labels=1000, seed=42):
+def lang_model(lr, lossW, num_labels=1000, seed=42):
      """
      One model has both semantic layer and discrete layer
      with the discrete layer being the output layer.
@@ -102,6 +104,8 @@ def lang_model(num_labels=1000, seed=42):
 
      inputs:
      ------
+          lossW: weight on the discrete loss term.
+                    (we fix weight on semantic loss term as 1.)
           num_labels: label output layer size
      """
      vgg = VGG16(weights='imagenet', include_top=True, input_shape=(224, 224, 3))
@@ -123,12 +127,12 @@ def lang_model(num_labels=1000, seed=42):
                kernel_initializer=keras.initializers.glorot_normal(seed=seed))(semantic_output)
 
      model = Model(inputs=vgg.input, outputs=[semantic_output, discrete_output])
-     model.compile(Adam(lr=3e-5),
+     model.compile(Adam(lr=lr),
                   loss=['mse', 'categorical_crossentropy'],
-                  loss_weights=[1, 0],
-                  metrics=['acc'],
+                  loss_weights=[1, lossW],
+                  #metrics=[totalLoss],
                   )
-     model.summary()
+     #model.summary()
      #plot_model(model, to_file='lang_model.png')
      return model
 

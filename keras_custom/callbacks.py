@@ -3,7 +3,6 @@ import warnings
 import numpy as np
 from tensorflow.python.keras.callbacks import Callback
 from tensorflow.python.keras.callbacks import ModelCheckpoint
-from tensorflow.python.util.tf_export import keras_export
 
 
 # custom ModelCheckpoint: save attention weights on the end of every epoch
@@ -302,3 +301,103 @@ class Checkpoint_AttnFactory(ModelCheckpoint):
                     self.model.save_weights(filepath, overwrite=True)
                 else:
                     self.model.save(filepath, overwrite=True) 
+
+
+class LangTotalLoss(Callback):
+    """
+    Monitoring semantic+descreite loss
+    of the lang model.
+    """
+
+    # https://stackoverflow.com/questions/59336883/only-show-total-loss-during-training-of-a-multi-output-model-in-keras
+    # https://keras.io/guides/writing_your_own_callbacks/
+    
+    def __init__(self,
+                 monitor='val_loss',
+                 min_delta=0,
+                 patience=0,
+                 verbose=0,
+                 mode='auto',
+                 baseline=None,
+                 restore_best_weights=False):
+
+        super(LangTotalLoss, self).__init__()
+        self.monitor = monitor
+        self.patience = patience
+        self.verbose = verbose
+        self.baseline = baseline
+        self.min_delta = abs(min_delta)
+        self.wait = 0
+        self.stopped_epoch = 0
+        self.restore_best_weights = restore_best_weights
+        self.best_weights = None
+
+        if mode not in ['auto', 'min', 'max']:
+            logging.warning('EarlyStopping mode %s is unknown, '
+                            'fallback to auto mode.', mode)
+            mode = 'auto'
+
+        if mode == 'min':
+            self.monitor_op = np.less
+        elif mode == 'max':
+            self.monitor_op = np.greater
+        else:
+            if 'acc' in self.monitor:
+                self.monitor_op = np.greater
+            else:
+                self.monitor_op = np.less
+
+        if self.monitor_op == np.greater:
+            self.min_delta *= 1
+        else:
+            self.min_delta *= -1
+
+    def on_train_begin(self, logs=None):
+        # Allow instances to be re-used
+        self.wait = 0
+        self.stopped_epoch = 0
+        if self.baseline is not None:
+            self.best = self.baseline
+        else:
+            self.best = np.Inf if self.monitor_op == np.less else -np.Inf
+
+    def on_epoch_end(self, epoch, logs=None):
+        """
+        monitor total loss and terminate given % improve
+        """
+        current = self.get_monitor_value(logs)
+        if current is None:
+            return
+        if self.monitor_op(current - self.min_delta, self.best):
+            self.best = current
+            self.wait = 0
+        if self.restore_best_weights:
+            self.best_weights = self.model.get_weights()
+        else:
+            self.wait += 1
+        if self.wait >= self.patience:
+            self.stopped_epoch = epoch
+            self.model.stop_training = True
+            if self.restore_best_weights:
+                if self.verbose > 0:
+                    print('Restoring model weights from the end of the best epoch.')
+                self.model.set_weights(self.best_weights)
+
+    def on_train_end(self, logs=None):
+        if self.stopped_epoch > 0 and self.verbose > 0:
+            print('Epoch %05d: early stopping' % (self.stopped_epoch + 1))
+
+    def get_monitor_value(self, logs):
+        logs = logs or {}
+        monitor_value = logs.get(self.monitor)
+
+        # we want to return the total loss at validation
+        # and we want to print total loss at train epoch end
+        # val_semantic_loss = logs['val_semantic_loss']
+        # val_discrete_loss = logs['val_discrete_loss']
+
+        if monitor_value is None:
+            logging.warning('Early stopping conditioned on metric `%s` '
+                            'which is not available. Available metrics are: %s',
+                            self.monitor, ','.join(list(logs.keys())))
+        return monitor_value

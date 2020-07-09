@@ -13,6 +13,7 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.applications.vgg16 import preprocess_input
 from tensorflow.keras.callbacks import TensorBoard, EarlyStopping
 
+from keras_custom.callbacks import LangTotalLoss
 from keras_custom.models.language_model import lang_model
 from keras_custom.generators.generator_wrappers import lang_gen
 from TRAIN.utils.data_utils import load_classes, data_directory
@@ -60,8 +61,14 @@ def specific_callbacks(run_name):
 
 def execute():
 
+    ###
+    lr = 3e-5
+    lossW = 0
+    run_name = f'9-7-20-lr={str(lr)}-lossW={lossW}'
+    ###
+
     # model compiled at definition
-    model = lang_model()
+    model = lang_model(lr=lr, lossW=lossW)
     
     # data
     train_gen, train_steps = train_n_val_data_gen(subset='training')
@@ -75,11 +82,11 @@ def execute():
                 callbacks=[earlystopping, tensorboard],
                 validation_data=val_gen, 
                 steps_per_epoch=train_steps,
-                validation_steps=val_steps, 
+                validation_steps=val_steps,
                 max_queue_size=40, workers=3, 
                 use_multiprocessing=False)
     
     # save weights
-    semantic_intermediate_ws = model.get_layer('semantic_intermediate').get_weights()
-    np.save('_trained_weights/semantic_intermediate_weights.npy', semantic_intermediate_ws)
+    semantic_ws = model.get_layer('semantic').get_weights()
+    np.save(f'_trained_weights/semantic_weights-{run_name}.npy', semantic_ws)
     print('weights saved.')
