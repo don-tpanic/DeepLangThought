@@ -94,7 +94,7 @@ def lang_model_semantic(num_labels=1000, seed=42):
 
 
 
-def lang_model(lr, lossW, num_labels=1000, seed=42):
+def lang_model(num_labels=1000, seed=42):
      """
      One model has both semantic layer and discrete layer
      with the discrete layer being the output layer.
@@ -127,11 +127,6 @@ def lang_model(lr, lossW, num_labels=1000, seed=42):
                kernel_initializer=keras.initializers.glorot_normal(seed=seed))(semantic_output)
 
      model = Model(inputs=vgg.input, outputs=[semantic_output, discrete_output])
-     model.compile(Adam(lr=lr),
-                  loss=['mse', 'categorical_crossentropy'],
-                  loss_weights=[1, lossW],
-                  #metrics=[totalLoss],
-                  )
      #model.summary()
      #plot_model(model, to_file='lang_model.png')
      return model

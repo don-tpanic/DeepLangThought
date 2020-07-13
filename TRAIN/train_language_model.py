@@ -24,12 +24,12 @@ Source module for training language model
 
 def train_n_val_data_gen(subset):
     # data generators
-    directory = data_directory()  # default is train, use val only for debug
+    directory = data_directory(part='train')  # default is train, use val only for debug
     wordvec_mtx = np.load('data_local/imagenet2vec/imagenet2vec_1k.npy')
     gen, steps = lang_gen(
                         directory=directory,
                         classes=None,
-                        batch_size=16,
+                        batch_size=128,
                         seed=42,
                         shuffle=True,
                         subset=subset,
@@ -67,8 +67,13 @@ def execute():
     run_name = f'9-7-20-lr={str(lr)}-lossW={lossW}'
     ###
 
-    # model compiled at definition
-    model = lang_model(lr=lr, lossW=lossW)
+    # model
+    model = lang_model()
+    opt = tf.train.experimental.enable_mixed_precision_graph_rewrite(opt=Adam(lr=lr))
+    model.compile(opt,
+                  loss=['mse', 'categorical_crossentropy'],
+                  loss_weights=[1, lossW],
+                  metrics=['acc'])
     
     # data
     train_gen, train_steps = train_n_val_data_gen(subset='training')
