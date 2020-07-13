@@ -1,6 +1,6 @@
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '3'
+os.environ["CUDA_VISIBLE_DEVICES"]= '2'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
@@ -8,19 +8,19 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras.applications.vgg16 import preprocess_input
 
-from keras_custom.generators.generator_wrappers import simple_generator
+from keras_custom.generators.generator_wrappers import lang_gen, simple_generator
 from EVAL.utils.data_utils import data_directory, load_classes
 from EVAL.utils.model_utils import ready_model
 
 """
-Use methods such as tNSE 
+Use methods such as tNSE or RSA
     to compare if the labelling effect makes sense.
 
 To do that we want to grab activations from the semantic layer
 in both the semantic model and the discrete model.
 """    
 
-def grab_activations(model, part, version, model_type):
+def grab_activations(model, part, version, lossW):
     """
     Receive a loaded model, run each class at a time.
     2. Compute the output matrix which is in (768,) for each image. 
@@ -32,7 +32,7 @@ def grab_activations(model, part, version, model_type):
         model: trained model
         part: default val_white, can be either train/val/val_white
         version: version of model weights, for now we use date.
-        model_type: semantic or discrete
+        lossW: weight on the discrete term.
     """
     # test data
     wordvec_mtx = np.load('data_local/imagenet2vec/imagenet2vec_1k.npy')
@@ -48,15 +48,16 @@ def grab_activations(model, part, version, model_type):
         gen, steps = simple_generator(
                         directory=directory,
                         classes=[wnid],
-                        batch_size=16,
+                        batch_size=128,
                         seed=42,
                         shuffle=True,
                         subset=None,
                         validation_split=0,
-                        class_mode='sparse',  # TODO, bug, categorical leads to error.
+                        class_mode='sparse',  # only used for lang due to BERT indexing
                         target_size=(224, 224),
                         preprocessing_function=preprocess_input,
                         horizontal_flip=False)
+
 
         # (N, 768)
         proba = model.predict(gen, steps, verbose=1, workers=3)
@@ -66,10 +67,10 @@ def grab_activations(model, part, version, model_type):
         assert avg_vec.shape == (768,)
 
         # save avg vec
-        np.save(f'_computed_activations/{version}/{model_type}/{category}.npy', avg_vec)
+        np.save(f'_computed_activations/{version}/lossW={lossW}/{category}.npy', avg_vec)
 
 
-def tsne_best(X):
+def tsne_best(X, max_epochs=5):
     """
     To deal with tsne's stochasticity,
     we try multiple restarts and only record the trial associated with
@@ -82,7 +83,7 @@ def tsne_best(X):
     best_kl_loss = None
     best_Y = None
 
-    for i in range(5):
+    for i in range(max_epochs):
         model = TSNE(n_components=2, n_iter=10000)
         Y = model.fit_transform(X_pca)
         kl_loss = model.kl_divergence_
@@ -98,7 +99,7 @@ def tsne_best(X):
     print('best_kl_loss = ', best_kl_loss)
     return best_Y
 
-def run_tsne(version, model_type):
+def run_tsne(version, lossW):
     """
     Run tSNE on saved avg vectors to compare difference
     between semantic and discrete models.
@@ -111,7 +112,7 @@ def run_tsne(version, model_type):
     embed_mtx = []
 
     for category in categories:
-        avg_vec = np.load(f'_computed_activations/{version}/{model_type}/{category}.npy')
+        avg_vec = np.load(f'_computed_activations/{version}/lossW={lossW}/{category}.npy')
         embed_mtx.append(avg_vec)
     
     X = np.array(embed_mtx)
@@ -131,8 +132,33 @@ def run_tsne(version, model_type):
         text = ax.annotate(txt, (all_x[i], all_y[i]))
         text.set_alpha(0.4)
 
-    plt.savefig(f'_computed_activations/{version}/tsne-{model_type}.pdf')
+    plt.savefig(f'_computed_activations/{version}/lossW={lossW}/tsne.pdf')
 
+def RSA():
+    """
+    Supply two models' activations,
+    construct two similarity matrices on the fly,
+    and compare how similar they are.
+    """
+    _, _, categories = load_classes(num_classes=1000, df='ranked')
+    
+    # TODO: only temp for block4Pool
+    embed_mtx = []
+    for category in categories:
+        avg_vec = np.load(f'_computed_activations/block4_pool=vgg16/{category}.npy')
+        embed_mtx.append(avg_vec)
+    X = np.array(embed_mtx)
+    print('X.shape = ', X.shape)
+    
+    embed_mtx = []
+    for category in categories:
+        avg_vec = np.load(f'_computed_activations/{version}/lossW={lossW}/{category}.npy')
+        embed_mtx.append(avg_vec)
+    Y = np.array(embed_mtx)
+    print('Y.shape = ', Y.shape)
+    
+    # TODO: get similarity matrix for X and Y
+    # TODO: compare correlation between simX and simY.
 
 
 
@@ -140,21 +166,21 @@ def run_tsne(version, model_type):
 
 def execute():
     ######################
-    model_type = 'semantic'
     part = 'val_white'
-    version = '1-7-20'
+    version = '9-7-20'
+    lossW = 0.1
     print('### compare semantic activations ###')
-    print(f'model: {model_type}')
     print(f'version: {version}')
+    print(f'lossW: {lossW}')
     print(f'eval on: {part}')
     print('------------------------------------')
     ######################
 
-    model = ready_model(model_type=model_type, version=version)
+    # model = ready_model(version=version, lossW=lossW)
 
-    grab_activations(model=model, 
-                     part=part, 
-                     version=version, 
-                     model_type=model_type)
+    # grab_activations(model=model, 
+    #                  part=part, 
+    #                  version=version,
+    #                  lossW=lossW)
 
-    run_tsne(version, model_type)
+    run_tsne(version, lossW)
