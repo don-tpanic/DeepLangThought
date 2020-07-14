@@ -1,6 +1,6 @@
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '2'
+os.environ["CUDA_VISIBLE_DEVICES"]= '5'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
@@ -72,6 +72,7 @@ def grab_activations(model, part, version, lossW):
         np.save(f'_computed_activations/{version}/lossW={lossW}/{category}.npy', avg_vec)
 
 
+### tsne ###
 def tsne_best(X, max_epochs=5):
     """
     To deal with tsne's stochasticity,
@@ -135,9 +136,11 @@ def run_tsne(version, lossW):
         text.set_alpha(0.4)
 
     plt.savefig(f'_computed_activations/{version}/lossW={lossW}/tsne.pdf')
+### ###
 
 
-def compute_distance_matrices(version, lossW, lang_model=False, useVGG=False, bert=False):
+### distance matrix correlation ###
+def distance_matrices(version, lossW, lang_model=False, useVGG=False, bert=False):
     """
     Given a model,
     compute a distance matrix for targeted activations.
@@ -145,9 +148,7 @@ def compute_distance_matrices(version, lossW, lang_model=False, useVGG=False, be
 
     outputs:
     --------
-        . distance matrix of targeted activations,
-            to save space, we only store the upper triangle (including diagnonal).
-        . the saved result is flattened into shape (N^2, 1)
+        . the saved result is the entire distance matrix (symmetric)
     """
     # load bert embedding matrix
     if bert:
@@ -169,11 +170,11 @@ def compute_distance_matrices(version, lossW, lang_model=False, useVGG=False, be
 
     # no matter what embed mtx is, get the upper triangle:
     X = np.array(embed_mtx)
-    X_dmtx = np.triu(distance_matrix(X, X)).flatten()
-    print(f'fname={fname}, X_dmtx.shape = ', X_dmtx.shape)
+    disMtx = distance_matrix(X, X)
+    print(f'fname={fname}, disMtx.shape = ', disMtx.shape)
 
     # save based on fname
-    np.save(f'_distance_matrices/{fname}.npy', X_dmtx)
+    np.save(f'_distance_matrices/{fname}.npy', disMtx)
     print('distance matrix saved.')
 
 
@@ -192,18 +193,67 @@ def RSA(fname1, fname2):
     distMtx2 = np.load(f'_distance_matrices/{fname2}.npy')
     assert distMtx1.shape == distMtx2.shape
 
-    print(spearmanr(distMtx1, distMtx2))
+    #print('full mtx spearman', spearmanr(distMtx1.flatten(), distMtx2.flatten()))
+    uptri1 = distMtx1[np.triu_indices(distMtx1.shape[0])]
+    uptri2 = distMtx2[np.triu_indices(distMtx2.shape[0])]
+    print('uptri spearman', spearmanr(uptri1, uptri2))
+
+### ###
+
+
+### finer compare ###
+def finer_distance_compare(fnames):
+    """
+    After showing high correlation figure across
+    levels of discrete pressure,
+
+    A closer look is needed into change of distance between 
+    a subset of classes to see if discrete pressure leads
+    to systematic changes in the semantic space.
+    """
+    # 1. overall distance for subset of classes
+    ###################
+    num_classes = 60
+    df = 'ave'
+    ###################
+    wnids, indices, categories = load_classes(num_classes=num_classes, df=df)
+
+    for f in fnames:
+        distMtx = np.load(f'_distance_matrices/{f}.npy')
+        
+        # TODO: why the slicing works differently?
+        subMtx = distMtx[indices, :][:, indices]
+        subMtx_uptri = subMtx[np.triu_indices(subMtx.shape[0])]
+        print('subMtx.shape = ', subMtx.shape)
+        print('subMtx_uptri.shape = ', subMtx_uptri.shape)
+
+        sum_dist = np.sum(subMtx_uptri)
+        mean_dist = np.mean(subMtx_uptri)
+        std_dist = np.std(subMtx_uptri)
+        print(f'{f}, sum={sum_dist}, mean={mean_dist}, std={std_dist}')
+
+
+
+
+
+
+
+
+
 
 
 def execute(compute_semantic_activation=False,
             compute_distance_matrices=False,
-            compute_RSA=True):
+            compute_RSA=False,
+            finer_compare=True,
+            ):
     ######################
     part = 'val_white'
     version = '9-7-20'
     lossW = 0.1
-    fname1 = 'version=9-7-20-lossW=10'
-    fname2s = ['version=9-7-20-lossW=10', 'version=9-7-20-lossW=1', 'version=9-7-20-lossW=0.1']
+    #fname1 = 'version=9-7-20-lossW=10'
+    #fname2s = ['bert', 'block4_pool', 'version=9-7-20-lossW=10', 'version=9-7-20-lossW=1', 'version=9-7-20-lossW=0.1']
+    fnames = ['version=9-7-20-lossW=10', 'version=9-7-20-lossW=1', 'version=9-7-20-lossW=0.1']
     ######################
 
     if compute_semantic_activation:
@@ -214,14 +264,17 @@ def execute(compute_semantic_activation=False,
                         lossW=lossW)
     
     if compute_distance_matrices:
-        compute_distance_matrices(version, lossW, 
-                                lang_model=True, 
-                                useVGG=False, 
-                                bert=False)
+        distance_matrices(version, lossW, 
+                          lang_model=False, 
+                          useVGG=False, 
+                          bert=True)
     
     if compute_RSA:
         for fname2 in fname2s:
             RSA(fname1, fname2)
+    
+    if finer_compare:
+        finer_distance_compare(fnames)
 
 
 
