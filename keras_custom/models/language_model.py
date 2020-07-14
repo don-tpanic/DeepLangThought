@@ -94,7 +94,7 @@ def lang_model_semantic(num_labels=1000, seed=42):
 
 
 
-def lang_model(num_labels=1000, seed=42):
+def lang_model(discrete_frozen=False, num_labels=1000, seed=42):
      """
      One model has both semantic layer and discrete layer
      with the discrete layer being the output layer.
@@ -104,12 +104,10 @@ def lang_model(num_labels=1000, seed=42):
 
      inputs:
      ------
-          lossW: weight on the discrete loss term.
-                    (we fix weight on semantic loss term as 1.)
+          trainable_discrete: if discrete layer is trainable or not.
           num_labels: label output layer size
      """
      vgg = VGG16(weights='imagenet', include_top=True, input_shape=(224, 224, 3))
-     # load fine tuned weights:
      vgg.load_weights('_trained_weights/VGG16_finetuned_fullmodelWeights.h5')
      print('loaded in fine tuned VGG16 weights.')
 
@@ -119,15 +117,21 @@ def lang_model(num_labels=1000, seed=42):
      for layer in vgg.layers[1:-1]:
           layer.trainable = False
           x = layer(x)
-
+     # w2 = 4096 * 768 + 768 = 3915496
      semantic_output = Dense(768, activation='sigmoid', name='semantic',
                kernel_initializer=keras.initializers.glorot_normal(seed=seed))(x)
-
+     # w3 = 768 * 1000 + 1000
      discrete_output = Dense(num_labels, activation='softmax', name='discrete',
                kernel_initializer=keras.initializers.glorot_normal(seed=seed))(semantic_output)
-
      model = Model(inputs=vgg.input, outputs=[semantic_output, discrete_output])
-     #model.summary()
+
+     # freeze w3
+     if discrete_frozen:
+          # 4096 * 768 + 768 = 3146496
+          model.get_layer('discrete').trainable = False
+          print('discrete layer is not trainable.')
+
+     model.summary()
      #plot_model(model, to_file='lang_model.png')
      return model
 

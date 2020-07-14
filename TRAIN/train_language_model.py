@@ -1,6 +1,6 @@
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '0'
+os.environ["CUDA_VISIBLE_DEVICES"]= '4'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
@@ -60,20 +60,27 @@ def specific_callbacks(run_name):
 
 
 def execute():
-
-    ###
+    ###################################################
     lr = 3e-5
-    lossW = 0
-    run_name = f'9-7-20-lr={str(lr)}-lossW={lossW}'
-    ###
-
+    lossW = 1
+    run_name = f'14-7-20-lr={str(lr)}-lossW={lossW}'
+    if lossW != 1:  
+        discrete_frozen = True
+    ###################################################
     # model
-    model = lang_model()
+    model = lang_model(discrete_frozen=discrete_frozen)
     opt = tf.train.experimental.enable_mixed_precision_graph_rewrite(opt=Adam(lr=lr))
     model.compile(opt,
                   loss=['mse', 'categorical_crossentropy'],
                   loss_weights=[1, lossW],
                   metrics=['acc'])
+
+    # TODO: review
+    # load in trained discrete weights for cases other than 1:1
+    if lossW != 1:
+        discrete_weights = np.load('_trained_weights/discrete_weights-14-7-20-lr=3e-5-lossW=1.npy', allow_pickle=True)
+        model.get_layer('discrete').set_weights([discrete_weights[0], discrete_weights[1]])
+        print('loaded trained discrete weights')
     
     # data
     train_gen, train_steps = train_n_val_data_gen(subset='training')
@@ -91,7 +98,12 @@ def execute():
                 max_queue_size=40, workers=3, 
                 use_multiprocessing=False)
     
-    # save weights
+    # save weights; both semantic (w2) and discrete (w3) weights.
     semantic_ws = model.get_layer('semantic').get_weights()
     np.save(f'_trained_weights/semantic_weights-{run_name}.npy', semantic_ws)
+
+    # only save discrete weights when 1:1
+    if lossW == 1:
+        discrete_ws = model.get_layer('discrete').get_weights()
+        np.save(f'_trained_weights/discrete_weights-{run_name}.npy', discrete_ws)
     print('weights saved.')

@@ -4,6 +4,8 @@ os.environ["CUDA_VISIBLE_DEVICES"]= '2'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
+from scipy.spatial import distance_matrix
+from scipy.stats import spearmanr
 
 import tensorflow as tf
 from tensorflow.keras.applications.vgg16 import preprocess_input
@@ -134,53 +136,93 @@ def run_tsne(version, lossW):
 
     plt.savefig(f'_computed_activations/{version}/lossW={lossW}/tsne.pdf')
 
-def RSA():
+
+def compute_distance_matrices(version, lossW, lang_model=False, useVGG=False, bert=False):
     """
-    Supply two models' activations,
-    construct two similarity matrices on the fly,
-    and compare how similar they are.
+    Given a model,
+    compute a distance matrix for targeted activations.
+    This is going to save the distance matrices to make RSA faster.
+
+    outputs:
+    --------
+        . distance matrix of targeted activations,
+            to save space, we only store the upper triangle (including diagnonal).
+        . the saved result is flattened into shape (N^2, 1)
     """
-    _, _, categories = load_classes(num_classes=1000, df='ranked')
-    
-    # TODO: only temp for block4Pool
-    embed_mtx = []
-    for category in categories:
-        avg_vec = np.load(f'_computed_activations/block4_pool=vgg16/{category}.npy')
-        embed_mtx.append(avg_vec)
+    # load bert embedding matrix
+    if bert:
+        embed_mtx = np.load('data_local/imagenet2vec/imagenet2vec_1k.npy')
+        fname = 'bert'
+    # other than bert, get embedding matrix for vgg or language model
+    else:
+        _, _, categories = load_classes(num_classes=1000, df='ranked')
+        embed_mtx = []
+
+        for category in categories:
+            if useVGG:
+                avg_vec = np.load(f'_computed_activations/block4_pool=vgg16/{category}.npy')
+                fname = 'block4_pool'
+            elif lang_model:
+                avg_vec = np.load(f'_computed_activations/{version}/lossW={lossW}/{category}.npy')
+                fname = f'version={version}-lossW={lossW}'
+            embed_mtx.append(avg_vec)
+
+    # no matter what embed mtx is, get the upper triangle:
     X = np.array(embed_mtx)
-    print('X.shape = ', X.shape)
-    
-    embed_mtx = []
-    for category in categories:
-        avg_vec = np.load(f'_computed_activations/{version}/lossW={lossW}/{category}.npy')
-        embed_mtx.append(avg_vec)
-    Y = np.array(embed_mtx)
-    print('Y.shape = ', Y.shape)
-    
-    # TODO: get similarity matrix for X and Y
-    # TODO: compare correlation between simX and simY.
+    X_dmtx = np.triu(distance_matrix(X, X)).flatten()
+    print(f'fname={fname}, X_dmtx.shape = ', X_dmtx.shape)
+
+    # save based on fname
+    np.save(f'_distance_matrices/{fname}.npy', X_dmtx)
+    print('distance matrix saved.')
 
 
+def RSA(fname1, fname2):
+    """
+    Supply two models' distance matrices
+    and compute spearmanr between them
+
+    inputs:
+    -------
+        names for two pre-computed distance matrices.
+    """
+    from scipy.stats import spearmanr
+
+    distMtx1 = np.load(f'_distance_matrices/{fname1}.npy')
+    distMtx2 = np.load(f'_distance_matrices/{fname2}.npy')
+    assert distMtx1.shape == distMtx2.shape
+
+    print(spearmanr(distMtx1, distMtx2))
 
 
-
-def execute():
+def execute(compute_semantic_activation=False,
+            compute_distance_matrices=False,
+            compute_RSA=True):
     ######################
     part = 'val_white'
     version = '9-7-20'
     lossW = 0.1
-    print('### compare semantic activations ###')
-    print(f'version: {version}')
-    print(f'lossW: {lossW}')
-    print(f'eval on: {part}')
-    print('------------------------------------')
+    fname1 = 'version=9-7-20-lossW=10'
+    fname2s = ['version=9-7-20-lossW=10', 'version=9-7-20-lossW=1', 'version=9-7-20-lossW=0.1']
     ######################
 
-    # model = ready_model(version=version, lossW=lossW)
+    if compute_semantic_activation:
+        model = ready_model(version=version, lossW=lossW)
+        grab_activations(model=model, 
+                        part=part, 
+                        version=version,
+                        lossW=lossW)
+    
+    if compute_distance_matrices:
+        compute_distance_matrices(version, lossW, 
+                                lang_model=True, 
+                                useVGG=False, 
+                                bert=False)
+    
+    if compute_RSA:
+        for fname2 in fname2s:
+            RSA(fname1, fname2)
 
-    # grab_activations(model=model, 
-    #                  part=part, 
-    #                  version=version,
-    #                  lossW=lossW)
 
-    run_tsne(version, lossW)
+
+
