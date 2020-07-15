@@ -4,6 +4,7 @@ os.environ["CUDA_VISIBLE_DEVICES"]= '5'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
+import matplotlib.pyplot as plt
 from scipy.spatial import distance_matrix
 from scipy.stats import spearmanr
 
@@ -213,8 +214,8 @@ def finer_distance_compare(fnames):
     """
     # 1. overall distance for subset of classes
     ###################
-    num_classes = 60
-    df = 'ave'
+    num_classes = 1000
+    df = 'ranked'
     ###################
     wnids, indices, categories = load_classes(num_classes=num_classes, df=df)
 
@@ -231,6 +232,21 @@ def finer_distance_compare(fnames):
         mean_dist = np.mean(subMtx_uptri)
         std_dist = np.std(subMtx_uptri)
         print(f'{f}, sum={sum_dist}, mean={mean_dist}, std={std_dist}')
+    
+    # 2. histograms of uptri distance matrices
+    bins = 20
+    fig, ax = plt.subplots()
+    ax.hist(collector[0], label='lossW=10', bins=bins, alpha=0.5)
+    ax.hist(collector[1], label='lossW=1', bins=bins, alpha=0.5)
+    ax.hist(collector[2], label='lossW=0.1', bins=bins, alpha=0.5)
+    ax.set_xlabel('pair wise distance')
+    ax.legend()
+    plt.savefig('RESULTS/distHists.pdf')
+
+    # 3. distance difference between distance matrices.
+
+
+        
 
 
 
@@ -251,9 +267,9 @@ def execute(compute_semantic_activation=False,
     part = 'val_white'
     version = '9-7-20'
     lossW = 0.1
-    #fname1 = 'version=9-7-20-lossW=10'
-    #fname2s = ['bert', 'block4_pool', 'version=9-7-20-lossW=10', 'version=9-7-20-lossW=1', 'version=9-7-20-lossW=0.1']
-    fnames = ['version=9-7-20-lossW=10', 'version=9-7-20-lossW=1', 'version=9-7-20-lossW=0.1']
+    fname1 = f'version={version}-lossW=1'
+    fname2s = [f'version={version}-lossW=10', f'version={version}-lossW=1', f'version={version}-lossW=0.1']
+    fnames = [f'version={version}-lossW=10', f'version={version}-lossW=1', f'version={version}-lossW=0.1']
     ######################
 
     if compute_semantic_activation:
