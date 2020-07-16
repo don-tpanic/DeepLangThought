@@ -260,16 +260,16 @@ def finer_distance_compare(fnames):
 
 def execute(compute_semantic_activation=False,
             compute_distance_matrices=False,
-            compute_RSA=False,
-            finer_compare=True,
+            compute_RSA=True,
+            finer_compare=False,
             ):
     ######################
     part = 'val_white'
     version = '9-7-20'
-    lossW = 0.1
-    fname1 = f'version={version}-lossW=1'
-    fname2s = [f'version={version}-lossW=10', f'version={version}-lossW=1', f'version={version}-lossW=0.1']
-    fnames = [f'version={version}-lossW=10', f'version={version}-lossW=1', f'version={version}-lossW=0.1']
+    lossW = 0
+    fname1 = f'version={version}-lossW=0.1'
+    fname2s = [f'version={version}-lossW=10', f'version={version}-lossW=1', f'version={version}-lossW=0.1', f'version={version}-lossW=0']
+    #fnames = [f'version={version}-lossW=10', f'version={version}-lossW=1', f'version={version}-lossW=0.1']
     ######################
 
     if compute_semantic_activation:
@@ -281,9 +281,9 @@ def execute(compute_semantic_activation=False,
     
     if compute_distance_matrices:
         distance_matrices(version, lossW, 
-                          lang_model=False, 
+                          lang_model=True, 
                           useVGG=False, 
-                          bert=True)
+                          bert=False)
     
     if compute_RSA:
         for fname2 in fname2s:
