@@ -1,10 +1,11 @@
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '4'
+os.environ["CUDA_VISIBLE_DEVICES"]= '0'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
 import pandas as pd
+import pickle
 
 import tensorflow as tf
 import tensorflow.keras as keras
@@ -62,23 +63,24 @@ def specific_callbacks(run_name):
 def execute():
     ###################################################
     lr = 3e-5
-    lossW = 1
-    run_name = f'14-7-20-lr={str(lr)}-lossW={lossW}'
-    if lossW != 1:  
-        discrete_frozen = True
+    lossW = 0
+    version = '16-7-20'
+    discrete_frozen = False
+    w2_depth = 2
+    run_name = f'{version}-lr={str(lr)}-lossW={lossW}'
     ###################################################
     # model
-    model = lang_model(discrete_frozen=discrete_frozen)
+    model = lang_model(w2_depth=w2_depth, discrete_frozen=discrete_frozen)
     opt = tf.train.experimental.enable_mixed_precision_graph_rewrite(opt=Adam(lr=lr))
     model.compile(opt,
                   loss=['mse', 'categorical_crossentropy'],
                   loss_weights=[1, lossW],
                   metrics=['acc'])
 
-    # TODO: review
     # load in trained discrete weights for cases other than 1:1
-    if lossW != 1:
-        discrete_weights = np.load('_trained_weights/discrete_weights-14-7-20-lr=3e-5-lossW=1.npy', allow_pickle=True)
+    if discrete_frozen:
+        with open(f'_trained_weights/discrete_weights-{version}-lr={lr}-lossW=1.pkl', 'rb') as f:
+            discrete_weights = pickle.load(f)
         model.get_layer('discrete').set_weights([discrete_weights[0], discrete_weights[1]])
         print('loaded trained discrete weights')
     
@@ -98,12 +100,21 @@ def execute():
                 max_queue_size=40, workers=3, 
                 use_multiprocessing=False)
     
-    # save weights; both semantic (w2) and discrete (w3) weights.
-    semantic_ws = model.get_layer('semantic').get_weights()
-    np.save(f'_trained_weights/semantic_weights-{run_name}.npy', semantic_ws)
 
-    # only save discrete weights when 1:1
-    if lossW == 1:
-        discrete_ws = model.get_layer('discrete').get_weights()
-        np.save(f'_trained_weights/discrete_weights-{run_name}.npy', discrete_ws)
-    print('weights saved.')
+    ### save weights including w2 dense, semantic, and discrete --- 
+    # w2 dense
+    for i in range(w2_depth):
+        dense_ws = model.get_layer(f'w2_dense_{i}').get_weights()
+        with open(f'_trained_weights/w2_dense_{i}-{run_name}.pkl', 'wb') as f:
+            pickle.dump(dense_ws, f)
+
+    # semantic
+    semantic_ws = model.get_layer('semantic').get_weights()
+    with open(f'_trained_weights/semantic_weights-{run_name}.pkl', 'wb') as f:
+            pickle.dump(semantic_ws, f)
+
+    # save discrete too if w3 were notfrozen
+    if not discrete_frozen:
+        discrete_weights = model.get_layer('discrete').get_weights()
+        with open(f'_trained_weights/discrete_weights-{run_name}.pkl', 'wb') as f:
+                pickle.dump(discrete_weights, f)

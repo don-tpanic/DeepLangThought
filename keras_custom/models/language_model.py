@@ -69,8 +69,8 @@ def lang_model(w2_depth, discrete_frozen=False, num_labels=1000, seed=42):
           model.get_layer('discrete').trainable = False
           print('discrete layer is not trainable.')
 
-     model.summary()
-     plot_model(model, to_file='lang_model.png')
+     #model.summary()
+     #plot_model(model, to_file='lang_model.png')
      return model
 
 
