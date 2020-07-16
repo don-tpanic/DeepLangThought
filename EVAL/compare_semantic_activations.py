@@ -266,11 +266,12 @@ def execute(compute_semantic_activation=True,
     ######################
     part = 'val_white'
     lr = 3e-5
-    lossW = 0
-    version = '9-7-20'
+    lossW = 1
+    version = '14-7-20'
     #discrete_frozen = False
     w2_depth = 0
     run_name = f'{version}-lr={str(lr)}-lossW={lossW}'
+    intersect_layer = 'semantic'
     # -------------------
     fname1 = f'version={version}-lossW=0.1'
     fname2s = [f'version={version}-lossW=10', f'version={version}-lossW=1', f'version={version}-lossW=0.1', f'version={version}-lossW=0']
@@ -278,7 +279,10 @@ def execute(compute_semantic_activation=True,
     ######################
 
     if compute_semantic_activation:
-        model = ready_model(w2_depth=w2_depth, run_name=run_name, lossW=lossW)
+        model = ready_model(w2_depth=w2_depth, 
+                            run_name=run_name, 
+                            lossW=lossW, 
+                            intersect_layer=intersect_layer)
         grab_activations(model=model, 
                         part=part, 
                         version=version,
