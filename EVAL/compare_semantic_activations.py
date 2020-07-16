@@ -258,22 +258,27 @@ def finer_distance_compare(fnames):
 
 
 
-def execute(compute_semantic_activation=False,
+def execute(compute_semantic_activation=True,
             compute_distance_matrices=False,
-            compute_RSA=True,
+            compute_RSA=False,
             finer_compare=False,
             ):
     ######################
     part = 'val_white'
-    version = '9-7-20'
+    lr = 3e-5
     lossW = 0
+    version = '9-7-20'
+    #discrete_frozen = False
+    w2_depth = 0
+    run_name = f'{version}-lr={str(lr)}-lossW={lossW}'
+    # -------------------
     fname1 = f'version={version}-lossW=0.1'
     fname2s = [f'version={version}-lossW=10', f'version={version}-lossW=1', f'version={version}-lossW=0.1', f'version={version}-lossW=0']
     #fnames = [f'version={version}-lossW=10', f'version={version}-lossW=1', f'version={version}-lossW=0.1']
     ######################
 
     if compute_semantic_activation:
-        model = ready_model(version=version, lossW=lossW)
+        model = ready_model(w2_depth=w2_depth, run_name=run_name, lossW=lossW)
         grab_activations(model=model, 
                         part=part, 
                         version=version,

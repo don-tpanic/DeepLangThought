@@ -10,26 +10,40 @@ from keras_custom.models.language_model import lang_model
 Some pre-defined models that are used repeatedly.
 """
 
-def ready_model(version, lossW):
+def ready_model(w2_depth, run_name, lossW):
     """
     Load in a specified model and intersect the activation after the 
-    semantic layer (either output or intermediate)
+    semantic layer.
+
+    inputs:
+    -------
+        w2_depth: number of dense layer between FC2 and semantic layer
+        run_name: f'{version}-lr={str(lr)}-lossW={lossW}'
+        lossW: loss on the discrete term
     """
     # model
-    model = lang_model()
-    # weights look like [kernel(4096,768), bias(768,)]
-    trained_weights = np.load(f'_trained_weights/semantic_weights-{version}-lr=3e-05-lossW={lossW}.npy',
-                            allow_pickle=True)
+    model = lang_model(w2_depth=w2_depth)
 
-    model.get_layer('semantic').set_weights([trained_weights[0], trained_weights[1]])
+    # load trained weights
+    ## w2 dense weights
+    for i in range(w2_depth):
+        with open(f'_trained_weights/w2_dense_{i}-{run_name}.pkl', 'rb') as f:
+            semantic_weights = pickle.load(f)
+
+    ## semantic weights
+    with open(f'_trained_weights/semantic_weights-{run_name}.pkl', 'rb') as f:
+        semantic_weights = pickle.load(f)
+
+    model.get_layer('semantic').set_weights([semantic_weights[0], semantic_weights[1]])
     model = Model(inputs=model.input, outputs=model.get_layer('semantic').output)
+
     model.compile(tf.keras.optimizers.Adam(lr=3e-5),
                   loss=['mse', 'categorical_crossentropy'],
                   loss_weights=[1, lossW],
                   metrics=['acc'])
 
-
-    print(f'version=[{version}], lossW=[{lossW}]')
+    model.summary()
+    print(f'run_name: {run_name}')
     return model
 
 
