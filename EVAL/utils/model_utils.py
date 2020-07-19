@@ -34,7 +34,7 @@ def ready_model(w2_depth, run_name, lossW, intersect_layer='semantic'):
     for i in range(w2_depth):
         with open(f'_trained_weights/w2_dense_{i}-{run_name}.pkl', 'rb') as f:
             dense_weights = pickle.load(f)
-            model.get_layer('w2_dense_{i}').set_weights([dense_weights[0], dense_weights[1]])
+            model.get_layer(f'w2_dense_{i}').set_weights([dense_weights[0], dense_weights[1]])
             print(f'Successfully loading layer weights for [w2_dense_{i}]')
 
     ## semantic weights
