@@ -140,16 +140,17 @@ def run_tsne(version, lossW):
 ### ###
 
 
-### distance matrix correlation ###
-def distance_matrices(version, lossW, lang_model=False, useVGG=False, bert=False):
+### embedding & distance matrix correlation ###
+def embedding_n_distance_matrices(version, lossW, lang_model=False, useVGG=False, bert=False):
     """
     Given a model,
-    compute a distance matrix for targeted activations.
-    This is going to save the distance matrices to make RSA faster.
+    compute a embedding and a distance matrix for targeted activations.
+    This is going to save the matrices to make RSA faster.
 
     outputs:
     --------
         . the saved result is the entire distance matrix (symmetric)
+            or the embedding matrix
     """
     # load bert embedding matrix
     if bert:
@@ -169,35 +170,43 @@ def distance_matrices(version, lossW, lang_model=False, useVGG=False, bert=False
                 fname = f'version={version}-lossW={lossW}'
             embed_mtx.append(avg_vec)
 
-    # no matter what embed mtx is, get the upper triangle:
     X = np.array(embed_mtx)
+    print(f'fname={fname}, X.shape = ', X.shape)
+    np.save(f'_embedding_matrices/{fname}.npy', X)
+    print('embedding matrix saved.')
+
+
     disMtx = distance_matrix(X, X)
     print(f'fname={fname}, disMtx.shape = ', disMtx.shape)
-
     # save based on fname
     np.save(f'_distance_matrices/{fname}.npy', disMtx)
     print('distance matrix saved.')
 
 
-def RSA(fname1, fname2):
+def RSA(fname1, fname2, mtx_type='distance'):
     """
     Supply two models' distance matrices
+    or embedding matrices,
     and compute spearmanr between them
 
     inputs:
     -------
         names for two pre-computed distance matrices.
+        mtx_type: either distance or embedding matrices.
     """
     from scipy.stats import spearmanr
 
-    distMtx1 = np.load(f'_distance_matrices/{fname1}.npy')
-    distMtx2 = np.load(f'_distance_matrices/{fname2}.npy')
-    assert distMtx1.shape == distMtx2.shape
+    mtx1 = np.load(f'_{mtx_type}_matrices/{fname1}.npy')
+    mtx2 = np.load(f'_{mtx_type}_matrices/{fname2}.npy')
+    assert mtx1.shape == mtx2.shape
 
-    #print('full mtx spearman', spearmanr(distMtx1.flatten(), distMtx2.flatten()))
-    uptri1 = distMtx1[np.triu_indices(distMtx1.shape[0])]
-    uptri2 = distMtx2[np.triu_indices(distMtx2.shape[0])]
-    print('uptri spearman', spearmanr(uptri1, uptri2))
+    if mtx_type == 'distance':
+        uptri1 = mtx1[np.triu_indices(mtx1.shape[0])]
+        uptri2 = mtx2[np.triu_indices(mtx2.shape[0])]
+        print('uptri spearman', spearmanr(uptri1, uptri2))
+    elif mtx_type == 'embedding':
+        print('emb spearman', spearmanr(mtx1.flatten(), mtx2.flatten()))
+
 
 ### ###
 
@@ -258,24 +267,23 @@ def finer_distance_compare(fnames):
 
 
 
-def execute(compute_semantic_activation=True,
+def execute(compute_semantic_activation=False,
             compute_distance_matrices=False,
-            compute_RSA=False,
+            compute_RSA=True,
             finer_compare=False,
             ):
     ######################
     part = 'val_white'
     lr = 3e-5
-    lossW = 1
-    version = '14-7-20'
+    lossW = 0
+    version = '16-7-20'
     #discrete_frozen = False
-    w2_depth = 0
+    w2_depth = 2
     run_name = f'{version}-lr={str(lr)}-lossW={lossW}'
     intersect_layer = 'semantic'
     # -------------------
-    fname1 = f'version={version}-lossW=0.1'
-    fname2s = [f'version={version}-lossW=10', f'version={version}-lossW=1', f'version={version}-lossW=0.1', f'version={version}-lossW=0']
-    #fnames = [f'version={version}-lossW=10', f'version={version}-lossW=1', f'version={version}-lossW=0.1']
+    fname1 = 'bert'
+    fname2s = [f'version={version}-lossW={lossW}']
     ######################
 
     if compute_semantic_activation:
@@ -289,14 +297,15 @@ def execute(compute_semantic_activation=True,
                         lossW=lossW)
     
     if compute_distance_matrices:
-        distance_matrices(version, lossW, 
+        embedding_n_distance_matrices(
+                          version, lossW, 
                           lang_model=True, 
                           useVGG=False, 
                           bert=False)
     
     if compute_RSA:
         for fname2 in fname2s:
-            RSA(fname1, fname2)
+            RSA(fname1, fname2, mtx_type='distance')
     
     if finer_compare:
         finer_distance_compare(fnames)
