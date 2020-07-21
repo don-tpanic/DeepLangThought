@@ -6,7 +6,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial import distance_matrix
-from scipy.stats import spearmanr
+from scipy.stats import spearmanr, pearsonr
 
 import tensorflow as tf
 from tensorflow.keras.applications.vgg16 import preprocess_input
@@ -206,6 +206,7 @@ def RSA(fname1, fname2, mtx_type='distance'):
         print('uptri spearman', spearmanr(uptri1, uptri2))
     elif mtx_type == 'embedding':
         print('emb spearman', spearmanr(mtx1.flatten(), mtx2.flatten()))
+        print('emb pearson', pearsonr(mtx1.flatten(), mtx2.flatten()))
 
 
 ### ###
@@ -267,8 +268,8 @@ def finer_distance_compare(fnames):
 
 
 
-def execute(compute_semantic_activation=False,
-            compute_distance_matrices=False,
+def execute(compute_semantic_activation=True,
+            compute_distance_matrices=True,
             compute_RSA=True,
             finer_compare=False,
             ):
@@ -276,7 +277,7 @@ def execute(compute_semantic_activation=False,
     part = 'val_white'
     lr = 3e-5
     lossW = 0
-    version = '16-7-20'
+    version = '20-7-20'
     #discrete_frozen = False
     w2_depth = 2
     run_name = f'{version}-lr={str(lr)}-lossW={lossW}'
@@ -305,7 +306,7 @@ def execute(compute_semantic_activation=False,
     
     if compute_RSA:
         for fname2 in fname2s:
-            RSA(fname1, fname2, mtx_type='distance')
+            RSA(fname1, fname2, mtx_type='embedding')
     
     if finer_compare:
         finer_distance_compare(fnames)

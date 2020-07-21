@@ -1,6 +1,6 @@
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '0'
+os.environ["CUDA_VISIBLE_DEVICES"]= '1'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
@@ -64,13 +64,14 @@ def execute():
     ###################################################
     lr = 3e-5
     lossW = 0
-    version = '16-7-20'
+    version = '20-7-20'
     discrete_frozen = False
     w2_depth = 2
     run_name = f'{version}-lr={str(lr)}-lossW={lossW}'
     ###################################################
     # model
     model = lang_model(w2_depth=w2_depth, discrete_frozen=discrete_frozen)
+    model.summary()
     opt = tf.train.experimental.enable_mixed_precision_graph_rewrite(opt=Adam(lr=lr))
     model.compile(opt,
                   loss=['mse', 'categorical_crossentropy'],

@@ -42,15 +42,25 @@ def lang_model(w2_depth, discrete_frozen=False, num_labels=1000, seed=42):
      print('loaded in fine tuned VGG16 weights.')
 
      x = vgg.input
-     # [1,-2] means skip input layer and FC2 is trainable.
-     # we can change the last num to free up more layers.
+     # we can change the second index to
+     # remove some layers such as the FC layers.
+
+     # e.g. [1, :-1] --> keep FC1,2
+     # e.g. [1, :-3] --> remove FC1,2
      for layer in vgg.layers[1:-1]:
           layer.trainable = False
           x = layer(x)
 
+
+
+     # TODO: have brand new FC1,2 and randomly initialise them.
+     #x = Dense(4096, )
+
+
+
      # add a number of Dense layer between FC2 and semantic
      for i in range(w2_depth):
-          x = Dense(768, activation='relu', name=f'w2_dense_{i}',
+          x = Dense(4096, activation='relu', name=f'w2_dense_{i}',
                     kernel_initializer=keras.initializers.glorot_normal(seed=seed))(x)
      
      # 4096 * 768 + 768 = 3146496
