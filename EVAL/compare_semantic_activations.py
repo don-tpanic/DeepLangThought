@@ -277,9 +277,9 @@ def execute(compute_semantic_activation=True,
     part = 'val_white'
     lr = 3e-5
     lossW = 0
-    version = '20-7-20'
+    version = '21-7-20'
     #discrete_frozen = False
-    w2_depth = 2
+    w2_depth = 3
     run_name = f'{version}-lr={str(lr)}-lossW={lossW}'
     intersect_layer = 'semantic'
     # -------------------
