@@ -1,6 +1,6 @@
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '5'
+os.environ["CUDA_VISIBLE_DEVICES"]= '4'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
@@ -183,6 +183,35 @@ def embedding_n_distance_matrices(version, lossW, lang_model=False, useVGG=False
     print('distance matrix saved.')
 
 
+def embedding_n_distance_matrices_SUPonly(fname, supGroup, mtx_type='distance'):
+    """
+    Grab the pre-computed embedding or distance from above,
+    extract the sub-matrix based on `supGroup`,
+    return and save this sub matrix for further analysis.
+
+    inputs:
+    -------
+        fname: f'version={version}-lossW={lossW}'
+        supGroup: e.g. canidae
+    """
+    mtx = np.load(f'_{mtx_type}_matrices/{fname}.npy')
+    _, indices, _ = load_classes(999, df=supGroup)
+
+    # (1000, 768)
+    if mtx_type == 'embedding':
+        # (n, 768)
+        subMtx = mtx[indices, :]
+    # (1000, 1000)
+    elif mtx_type == 'distance':
+        # (n, n)
+        subMtx = mtx[indices, :][:, indices]
+        print('TODO: check shape')
+        exit()
+    
+    np.save(f'_{mtx_type}_matrices/{fname}-supGroup={supGroup}.npy')
+
+
+
 def RSA(fname1, fname2, mtx_type='distance'):
     """
     Supply two models' distance matrices
@@ -268,23 +297,24 @@ def finer_distance_compare(fnames):
 
 
 
-def execute(compute_semantic_activation=True,
-            compute_distance_matrices=True,
-            compute_RSA=True,
-            finer_compare=False,
+def execute(compute_semantic_activation=False,
+            compute_distance_matrices=False,
+            compute_RSA=False,
+            finer_compare=True,
             ):
     ######################
     part = 'val_white'
     lr = 3e-5
     lossW = 0
-    version = '21-7-20'
+    version = '20-7-20'
     #discrete_frozen = False
-    w2_depth = 3
+    w2_depth = 2
     run_name = f'{version}-lr={str(lr)}-lossW={lossW}'
     intersect_layer = 'semantic'
     # -------------------
     fname1 = 'bert'
     fname2s = [f'version={version}-lossW={lossW}']
+    fnames = [f'version={version}-lossW=0', f'version={version}-lossW=0.1', f'version={version}-lossW=1']
     ######################
 
     if compute_semantic_activation:
