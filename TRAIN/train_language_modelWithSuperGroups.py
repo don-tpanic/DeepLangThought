@@ -33,10 +33,6 @@ def train_n_val_data_gen(subset):
     directory = data_directory(part='train')  # default is train, use val only for debug
     wordvec_mtx = np.load('data_local/imagenet2vec/imagenet2vec_1k.npy')
 
-    #
-    #wnids, _, _ = load_classes(999, 'canidae')
-
-
     gen, steps = sup_gen(
                         directory=directory,
                         classes=None,
@@ -77,7 +73,8 @@ def execute():
     version = '20-7-20'
     discrete_frozen = False
     w2_depth = 2
-    run_name = f'{version}-lr={str(lr)}-lossW={lossW}'
+    supGroup = 'canidae'  # all dogs collapse into one class.
+    run_name = f'{version}-lr={str(lr)}-lossW={lossW}-sup={supGroup}'
     ###################################################
     # model
     model = lang_model(w2_depth=w2_depth, discrete_frozen=discrete_frozen)
@@ -101,12 +98,12 @@ def execute():
     # callbacks and fitting
     earlystopping, tensorboard = specific_callbacks(run_name=run_name)
     model.fit(train_gen,
-                epochs=1, 
+                epochs=500, 
                 verbose=1, 
-                #callbacks=[earlystopping, tensorboard],
+                callbacks=[earlystopping, tensorboard],
                 validation_data=val_gen, 
-                steps_per_epoch=1,
-                validation_steps=1,
+                steps_per_epoch=train_steps,
+                validation_steps=val_steps,
                 max_queue_size=40, workers=3, 
                 use_multiprocessing=False)
     
