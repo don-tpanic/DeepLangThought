@@ -69,7 +69,7 @@ def specific_callbacks(run_name):
 def execute():
     ###################################################
     lr = 3e-5
-    lossW = 0.1
+    lossW = 10
     version = '20-7-20'
     discrete_frozen = False
     w2_depth = 2
