@@ -1,6 +1,6 @@
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '4'
+os.environ["CUDA_VISIBLE_DEVICES"]= '5'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
@@ -183,35 +183,6 @@ def embedding_n_distance_matrices(version, lossW, lang_model=False, useVGG=False
     print('distance matrix saved.')
 
 
-def embedding_n_distance_matrices_SUPonly(fname, supGroup, mtx_type='distance'):
-    """
-    Grab the pre-computed embedding or distance from above,
-    extract the sub-matrix based on `supGroup`,
-    return and save this sub matrix for further analysis.
-
-    inputs:
-    -------
-        fname: f'version={version}-lossW={lossW}'
-        supGroup: e.g. canidae
-    """
-    mtx = np.load(f'_{mtx_type}_matrices/{fname}.npy')
-    _, indices, _ = load_classes(999, df=supGroup)
-
-    # (1000, 768)
-    if mtx_type == 'embedding':
-        # (n, 768)
-        subMtx = mtx[indices, :]
-    # (1000, 1000)
-    elif mtx_type == 'distance':
-        # (n, n)
-        subMtx = mtx[indices, :][:, indices]
-        print('TODO: check shape')
-        exit()
-    
-    np.save(f'_{mtx_type}_matrices/{fname}-supGroup={supGroup}.npy')
-
-
-
 def RSA(fname1, fname2, mtx_type='distance'):
     """
     Supply two models' distance matrices
@@ -233,6 +204,7 @@ def RSA(fname1, fname2, mtx_type='distance'):
         uptri1 = mtx1[np.triu_indices(mtx1.shape[0])]
         uptri2 = mtx2[np.triu_indices(mtx2.shape[0])]
         print('uptri spearman', spearmanr(uptri1, uptri2))
+
     elif mtx_type == 'embedding':
         print('emb spearman', spearmanr(mtx1.flatten(), mtx2.flatten()))
         print('emb pearson', pearsonr(mtx1.flatten(), mtx2.flatten()))
@@ -254,14 +226,13 @@ def finer_distance_compare(fnames):
     # 1. overall distance for subset of classes
     ###################
     num_classes = 1000
-    df = 'ranked'
+    df = 'canidae'
     ###################
     wnids, indices, categories = load_classes(num_classes=num_classes, df=df)
 
+    collector = []
     for f in fnames:
-        distMtx = np.load(f'_distance_matrices/{f}.npy')
-        
-        # TODO: why the slicing works differently?
+        distMtx = np.load(f'_distance_matrices/{f}.npy')        
         subMtx = distMtx[indices, :][:, indices]
         subMtx_uptri = subMtx[np.triu_indices(subMtx.shape[0])]
         print('subMtx.shape = ', subMtx.shape)
@@ -271,16 +242,19 @@ def finer_distance_compare(fnames):
         mean_dist = np.mean(subMtx_uptri)
         std_dist = np.std(subMtx_uptri)
         print(f'{f}, sum={sum_dist}, mean={mean_dist}, std={std_dist}')
+
+        collector.append(subMtx_uptri)
     
     # 2. histograms of uptri distance matrices
     bins = 20
     fig, ax = plt.subplots()
-    ax.hist(collector[0], label='lossW=10', bins=bins, alpha=0.5)
-    ax.hist(collector[1], label='lossW=1', bins=bins, alpha=0.5)
-    ax.hist(collector[2], label='lossW=0.1', bins=bins, alpha=0.5)
+    ax.hist(collector[0], label='lossW=0', bins=bins, alpha=0.5)
+    ax.hist(collector[1], label='lossW=0.1', bins=bins, alpha=0.5)
+    ax.hist(collector[2], label='lossW=1', bins=bins, alpha=0.5)
+    ax.hist(collector[3], label='lossW=10', bins=bins, alpha=0.5)
     ax.set_xlabel('pair wise distance')
     ax.legend()
-    plt.savefig('RESULTS/distHists.pdf')
+    plt.savefig('RESULTS/distHists-version=20-7-20-sup=canidae.pdf')
 
     # 3. distance difference between distance matrices.
 
@@ -299,13 +273,13 @@ def finer_distance_compare(fnames):
 
 def execute(compute_semantic_activation=False,
             compute_distance_matrices=False,
-            compute_RSA=False,
-            finer_compare=True,
+            compute_RSA=True,
+            finer_compare=False,
             ):
     ######################
     part = 'val_white'
     lr = 3e-5
-    lossW = 0
+    lossW = '0.1-sup=canidae'
     version = '20-7-20'
     #discrete_frozen = False
     w2_depth = 2
@@ -314,7 +288,7 @@ def execute(compute_semantic_activation=False,
     # -------------------
     fname1 = 'bert'
     fname2s = [f'version={version}-lossW={lossW}']
-    fnames = [f'version={version}-lossW=0', f'version={version}-lossW=0.1', f'version={version}-lossW=1']
+    fnames = [f'version={version}-lossW=0', f'version={version}-lossW=0.1-sup=canidae', f'version={version}-lossW=1-sup=canidae', f'version={version}-lossW=10-sup=canidae']
     ######################
 
     if compute_semantic_activation:
@@ -336,10 +310,11 @@ def execute(compute_semantic_activation=False,
     
     if compute_RSA:
         for fname2 in fname2s:
-            RSA(fname1, fname2, mtx_type='embedding')
+            RSA(fname1, fname2, mtx_type='distance')
     
     if finer_compare:
         finer_distance_compare(fnames)
+    
 
 
 
