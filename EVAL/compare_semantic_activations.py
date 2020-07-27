@@ -1,6 +1,6 @@
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '5'
+os.environ["CUDA_VISIBLE_DEVICES"]= '0'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
@@ -272,23 +272,23 @@ def finer_distance_compare(fnames):
 
 
 def execute(compute_semantic_activation=False,
-            compute_distance_matrices=False,
-            compute_RSA=True,
+            compute_distance_matrices=True,
+            compute_RSA=False,
             finer_compare=False,
             ):
     ######################
     part = 'val_white'
     lr = 3e-5
-    lossW = '0.1-sup=canidae'
-    version = '20-7-20'
+    lossW = '0'
+    version = '25-7-20'
     #discrete_frozen = False
     w2_depth = 2
     run_name = f'{version}-lr={str(lr)}-lossW={lossW}'
     intersect_layer = 'semantic'
     # -------------------
     fname1 = 'bert'
-    fname2s = [f'version={version}-lossW={lossW}']
-    fnames = [f'version={version}-lossW=0', f'version={version}-lossW=0.1-sup=canidae', f'version={version}-lossW=1-sup=canidae', f'version={version}-lossW=10-sup=canidae']
+    #fname2s = [f'version={version}-lossW={lossW}']
+    fname2s = [f'version={version}-lossW=0', f'version={version}-lossW=0.1-sup=canidae', f'version={version}-lossW=1-sup=canidae', f'version={version}-lossW=10-sup=canidae']
     ######################
 
     if compute_semantic_activation:
@@ -310,7 +310,7 @@ def execute(compute_semantic_activation=False,
     
     if compute_RSA:
         for fname2 in fname2s:
-            RSA(fname1, fname2, mtx_type='distance')
+            RSA(fname1, fname2, mtx_type='embedding')
     
     if finer_compare:
         finer_distance_compare(fnames)

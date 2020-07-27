@@ -1,6 +1,6 @@
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '0'
+os.environ["CUDA_VISIBLE_DEVICES"]= '1'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
@@ -63,43 +63,45 @@ def specific_callbacks(run_name):
 def execute():
     ###################################################
     lr = 3e-5
-    lossW = 10
-    version = '20-7-20'
-    discrete_frozen = False
-    w2_depth = 2
-    run_name = f'{version}-lr={str(lr)}-lossW={lossW}'
-    ###################################################
-    # model
-    model = lang_model(w2_depth=w2_depth, discrete_frozen=discrete_frozen)
-    model.summary()
-    opt = tf.train.experimental.enable_mixed_precision_graph_rewrite(opt=Adam(lr=lr))
-    model.compile(opt,
-                  loss=['mse', 'categorical_crossentropy'],
-                  loss_weights=[1, lossW],
-                  metrics=['acc'])
+    lossWs = [1, 10]
+    for lossW in lossWs:
+        version = '27-7-20'
+        discrete_frozen = False
+        w2_depth = 2
+        run_name = f'{version}-lr={str(lr)}-lossW={lossW}'
+        print('run_name = ', run_name)
+        ###################################################
+        # model
+        model = lang_model(w2_depth=w2_depth, discrete_frozen=discrete_frozen)
+        model.summary()
+        opt = tf.train.experimental.enable_mixed_precision_graph_rewrite(opt=Adam(lr=lr))
+        model.compile(opt,
+                    loss=['mse', 'categorical_crossentropy'],
+                    loss_weights=[1, lossW],
+                    metrics=['acc'])
 
-    # load in trained discrete weights for cases other than 1:1
-    if discrete_frozen:
-        with open(f'_trained_weights/discrete_weights-{version}-lr={lr}-lossW=1.pkl', 'rb') as f:
-            discrete_weights = pickle.load(f)
-        model.get_layer('discrete').set_weights([discrete_weights[0], discrete_weights[1]])
-        print('loaded trained discrete weights')
-    
-    # data
-    train_gen, train_steps = train_n_val_data_gen(subset='training')
-    val_gen, val_steps = train_n_val_data_gen(subset='validation')
+        # load in trained discrete weights for cases other than 1:1
+        if discrete_frozen:
+            with open(f'_trained_weights/discrete_weights-{version}-lr={lr}-lossW=1.pkl', 'rb') as f:
+                discrete_weights = pickle.load(f)
+            model.get_layer('discrete').set_weights([discrete_weights[0], discrete_weights[1]])
+            print('loaded trained discrete weights')
+        
+        # data
+        train_gen, train_steps = train_n_val_data_gen(subset='training')
+        val_gen, val_steps = train_n_val_data_gen(subset='validation')
 
-    # callbacks and fitting
-    earlystopping, tensorboard = specific_callbacks(run_name=run_name)
-    model.fit(train_gen,
-                epochs=500, 
-                verbose=1, 
-                callbacks=[earlystopping, tensorboard],
-                validation_data=val_gen, 
-                steps_per_epoch=train_steps,
-                validation_steps=val_steps,
-                max_queue_size=40, workers=3, 
-                use_multiprocessing=False)
+        # callbacks and fitting
+        earlystopping, tensorboard = specific_callbacks(run_name=run_name)
+        model.fit(train_gen,
+                    epochs=500, 
+                    verbose=1, 
+                    callbacks=[earlystopping, tensorboard],
+                    validation_data=val_gen, 
+                    steps_per_epoch=train_steps,
+                    validation_steps=val_steps,
+                    max_queue_size=40, workers=3, 
+                    use_multiprocessing=False)
     
 
     ### save weights including w2 dense, semantic, and discrete --- 

@@ -64,7 +64,7 @@ def lang_model(w2_depth, discrete_frozen=False, num_labels=1000, seed=42):
                     kernel_initializer=keras.initializers.glorot_normal(seed=seed))(x)
      
      # 4096 * 768 + 768 = 3146496
-     semantic_output = Dense(768, activation='sigmoid', name='semantic',
+     semantic_output = Dense(768, activation=None, name='semantic',
                kernel_initializer=keras.initializers.glorot_normal(seed=seed))(x)
 
 
