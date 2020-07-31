@@ -63,7 +63,7 @@ def specific_callbacks(run_name):
 def execute():
     ###################################################
     lr = 3e-5
-    lossWs = [1, 10]
+    lossWs = [2, 7]
     for lossW in lossWs:
         version = '27-7-20'
         discrete_frozen = False
@@ -104,20 +104,20 @@ def execute():
                     use_multiprocessing=False)
     
 
-    ### save weights including w2 dense, semantic, and discrete --- 
-    # w2 dense
-    for i in range(w2_depth):
-        dense_ws = model.get_layer(f'w2_dense_{i}').get_weights()
-        with open(f'_trained_weights/w2_dense_{i}-{run_name}.pkl', 'wb') as f:
-            pickle.dump(dense_ws, f)
+        ### save weights including w2 dense, semantic, and discrete --- 
+        # w2 dense
+        for i in range(w2_depth):
+            dense_ws = model.get_layer(f'w2_dense_{i}').get_weights()
+            with open(f'_trained_weights/w2_dense_{i}-{run_name}.pkl', 'wb') as f:
+                pickle.dump(dense_ws, f)
 
-    # semantic
-    semantic_ws = model.get_layer('semantic').get_weights()
-    with open(f'_trained_weights/semantic_weights-{run_name}.pkl', 'wb') as f:
-            pickle.dump(semantic_ws, f)
+        # semantic
+        semantic_ws = model.get_layer('semantic').get_weights()
+        with open(f'_trained_weights/semantic_weights-{run_name}.pkl', 'wb') as f:
+                pickle.dump(semantic_ws, f)
 
-    # save discrete too if w3 were notfrozen
-    if not discrete_frozen:
-        discrete_weights = model.get_layer('discrete').get_weights()
-        with open(f'_trained_weights/discrete_weights-{run_name}.pkl', 'wb') as f:
-                pickle.dump(discrete_weights, f)
+        # save discrete too if w3 were notfrozen
+        if not discrete_frozen:
+            discrete_weights = model.get_layer('discrete').get_weights()
+            with open(f'_trained_weights/discrete_weights-{run_name}.pkl', 'wb') as f:
+                    pickle.dump(discrete_weights, f)

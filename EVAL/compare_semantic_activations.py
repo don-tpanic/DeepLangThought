@@ -214,7 +214,7 @@ def RSA(fname1, fname2, mtx_type='distance'):
 
 
 ### finer compare ###
-def finer_distance_compare(fnames):
+def finer_distance_compare(lossWs, version):
     """
     After showing high correlation figure across
     levels of discrete pressure,
@@ -226,36 +226,43 @@ def finer_distance_compare(fnames):
     # 1. overall distance for subset of classes
     ###################
     num_classes = 1000
-    df = 'canidae'
+    df = 'ranked'
     ###################
     wnids, indices, categories = load_classes(num_classes=num_classes, df=df)
 
-    collector = []
-    for f in fnames:
-        distMtx = np.load(f'_distance_matrices/{f}.npy')        
+    bins = 20
+    fig, ax = plt.subplots()
+    for i in range(len(lossWs)):
+
+        lossW = lossWs[i]
+
+        distMtx = np.load(f'_distance_matrices/version={version}-lossW={lossW}.npy')      
         subMtx = distMtx[indices, :][:, indices]
         subMtx_uptri = subMtx[np.triu_indices(subMtx.shape[0])]
         print('subMtx.shape = ', subMtx.shape)
         print('subMtx_uptri.shape = ', subMtx_uptri.shape)
-
         sum_dist = np.sum(subMtx_uptri)
         mean_dist = np.mean(subMtx_uptri)
         std_dist = np.std(subMtx_uptri)
-        print(f'{f}, sum={sum_dist}, mean={mean_dist}, std={std_dist}')
-
-        collector.append(subMtx_uptri)
+        print(f'lossW={lossW}, sum={sum_dist}, mean={mean_dist}, std={std_dist}')
     
-    # 2. histograms of uptri distance matrices
-    bins = 20
-    fig, ax = plt.subplots()
-    ax.hist(collector[0], label='lossW=0', bins=bins, alpha=0.5)
-    ax.hist(collector[1], label='lossW=0.1', bins=bins, alpha=0.5)
-    ax.hist(collector[2], label='lossW=1', bins=bins, alpha=0.5)
-    ax.hist(collector[3], label='lossW=10', bins=bins, alpha=0.5)
-    ax.set_xlabel('pair wise distance')
-    ax.legend()
-    plt.savefig('RESULTS/distHists-version=20-7-20-sup=canidae.pdf')
+        # 2. histograms of uptri distance matrices.
+        # ax.hist(subMtx_uptri, label=f'lossW={lossW}', bins=bins, alpha=0.3)
+        # ax.set_xlabel('pair wise distance')
+        # ax.legend()
 
+        # 3. error bars.
+        ax.errorbar(lossW, mean_dist, yerr=std_dist, capsize=3, fmt='o')
+        ax.set_xlabel('Weight on discrete loss')
+        ax.set_ylabel('Relative distance')
+    
+    if df == 'ranked':
+        ax.set_title('Across all 1k classes')
+        plt.savefig(f'RESULTS/distPlot-version={version}.pdf')
+    else:
+        ax.set_title(f'Across subset of {df} classes')
+        plt.savefig(f'RESULTS/distPlot-version={version}-sup={df}-temp.pdf')
+    
     # 3. distance difference between distance matrices.
 
 
@@ -272,23 +279,23 @@ def finer_distance_compare(fnames):
 
 
 def execute(compute_semantic_activation=False,
-            compute_distance_matrices=True,
+            compute_distance_matrices=False,
             compute_RSA=False,
-            finer_compare=False,
+            finer_compare=True,
             ):
     ######################
     part = 'val_white'
     lr = 3e-5
-    lossW = '0'
-    version = '25-7-20'
+    lossW = '2'
+    version = '27-7-20'
     #discrete_frozen = False
     w2_depth = 2
     run_name = f'{version}-lr={str(lr)}-lossW={lossW}'
     intersect_layer = 'semantic'
     # -------------------
     fname1 = 'bert'
-    #fname2s = [f'version={version}-lossW={lossW}']
-    fname2s = [f'version={version}-lossW=0', f'version={version}-lossW=0.1-sup=canidae', f'version={version}-lossW=1-sup=canidae', f'version={version}-lossW=10-sup=canidae']
+    lossWs = [0.1, 1, 2, 3, 5, 7, 10]
+    #fnames = [f'version={version}-lossW=10']
     ######################
 
     if compute_semantic_activation:
@@ -313,7 +320,7 @@ def execute(compute_semantic_activation=False,
             RSA(fname1, fname2, mtx_type='embedding')
     
     if finer_compare:
-        finer_distance_compare(fnames)
+        finer_distance_compare(lossWs, version=version)
     
 
 

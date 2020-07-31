@@ -69,59 +69,60 @@ def specific_callbacks(run_name):
 def execute():
     ###################################################
     lr = 3e-5
-    lossW = 10
-    version = '20-7-20'
-    discrete_frozen = False
-    w2_depth = 2
-    supGroup = 'canidae'  # all dogs collapse into one class.
-    run_name = f'{version}-lr={str(lr)}-lossW={lossW}-sup={supGroup}'
-    ###################################################
-    # model
-    model = lang_model(w2_depth=w2_depth, discrete_frozen=discrete_frozen)
-    opt = tf.train.experimental.enable_mixed_precision_graph_rewrite(opt=Adam(lr=lr))
-    model.compile(opt,
-                  loss=['mse', 'categorical_crossentropy'],
-                  loss_weights=[1, lossW],
-                  metrics=['acc'])
+    lossWs = [5, 2, 7, 3]
+    for lossW in lossWs:
+        version = '27-7-20'
+        discrete_frozen = False
+        w2_depth = 2
+        supGroup = 'canidae'  # all dogs collapse into one class.
+        run_name = f'{version}-lr={str(lr)}-lossW={lossW}-sup={supGroup}'
+        ###################################################
+        # model
+        model = lang_model(w2_depth=w2_depth, discrete_frozen=discrete_frozen)
+        opt = tf.train.experimental.enable_mixed_precision_graph_rewrite(opt=Adam(lr=lr))
+        model.compile(opt,
+                    loss=['mse', 'categorical_crossentropy'],
+                    loss_weights=[1, lossW],
+                    metrics=['acc'])
 
-    # load in trained discrete weights for cases other than 1:1
-    if discrete_frozen:
-        with open(f'_trained_weights/discrete_weights-{version}-lr={lr}-lossW=1.pkl', 'rb') as f:
-            discrete_weights = pickle.load(f)
-        model.get_layer('discrete').set_weights([discrete_weights[0], discrete_weights[1]])
-        print('loaded trained discrete weights')
-    
-    # data
-    train_gen, train_steps = train_n_val_data_gen(subset='training')
-    val_gen, val_steps = train_n_val_data_gen(subset='validation')
+        # load in trained discrete weights for cases other than 1:1
+        if discrete_frozen:
+            with open(f'_trained_weights/discrete_weights-{version}-lr={lr}-lossW=1.pkl', 'rb') as f:
+                discrete_weights = pickle.load(f)
+            model.get_layer('discrete').set_weights([discrete_weights[0], discrete_weights[1]])
+            print('loaded trained discrete weights')
+        
+        # data
+        train_gen, train_steps = train_n_val_data_gen(subset='training')
+        val_gen, val_steps = train_n_val_data_gen(subset='validation')
 
-    # callbacks and fitting
-    earlystopping, tensorboard = specific_callbacks(run_name=run_name)
-    model.fit(train_gen,
-                epochs=500, 
-                verbose=1, 
-                callbacks=[earlystopping, tensorboard],
-                validation_data=val_gen, 
-                steps_per_epoch=train_steps,
-                validation_steps=val_steps,
-                max_queue_size=40, workers=3, 
-                use_multiprocessing=False)
-    
+        # callbacks and fitting
+        earlystopping, tensorboard = specific_callbacks(run_name=run_name)
+        model.fit(train_gen,
+                    epochs=500, 
+                    verbose=1, 
+                    callbacks=[earlystopping, tensorboard],
+                    validation_data=val_gen, 
+                    steps_per_epoch=train_steps,
+                    validation_steps=val_steps,
+                    max_queue_size=40, workers=3, 
+                    use_multiprocessing=False)
+        
 
-    ### save weights including w2 dense, semantic, and discrete --- 
-    # w2 dense
-    for i in range(w2_depth):
-        dense_ws = model.get_layer(f'w2_dense_{i}').get_weights()
-        with open(f'_trained_weights/w2_dense_{i}-{run_name}.pkl', 'wb') as f:
-            pickle.dump(dense_ws, f)
+        ### save weights including w2 dense, semantic, and discrete --- 
+        # w2 dense
+        for i in range(w2_depth):
+            dense_ws = model.get_layer(f'w2_dense_{i}').get_weights()
+            with open(f'_trained_weights/w2_dense_{i}-{run_name}.pkl', 'wb') as f:
+                pickle.dump(dense_ws, f)
 
-    # semantic
-    semantic_ws = model.get_layer('semantic').get_weights()
-    with open(f'_trained_weights/semantic_weights-{run_name}.pkl', 'wb') as f:
-            pickle.dump(semantic_ws, f)
+        # semantic
+        semantic_ws = model.get_layer('semantic').get_weights()
+        with open(f'_trained_weights/semantic_weights-{run_name}.pkl', 'wb') as f:
+                pickle.dump(semantic_ws, f)
 
-    # save discrete too if w3 were notfrozen
-    if not discrete_frozen:
-        discrete_weights = model.get_layer('discrete').get_weights()
-        with open(f'_trained_weights/discrete_weights-{run_name}.pkl', 'wb') as f:
-                pickle.dump(discrete_weights, f)
+        # save discrete too if w3 were notfrozen
+        if not discrete_frozen:
+            discrete_weights = model.get_layer('discrete').get_weights()
+            with open(f'_trained_weights/discrete_weights-{run_name}.pkl', 'wb') as f:
+                    pickle.dump(discrete_weights, f)
