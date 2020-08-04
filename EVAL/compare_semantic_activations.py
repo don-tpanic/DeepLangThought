@@ -226,7 +226,7 @@ def finer_distance_compare(lossWs, version):
     # 1. overall distance for subset of classes
     ###################
     num_classes = 1000
-    df = 'ranked'
+    df = 'canidae'
     ###################
     wnids, indices, categories = load_classes(num_classes=num_classes, df=df)
 
@@ -236,7 +236,7 @@ def finer_distance_compare(lossWs, version):
 
         lossW = lossWs[i]
 
-        distMtx = np.load(f'_distance_matrices/version={version}-lossW={lossW}.npy')      
+        distMtx = np.load(f'_distance_matrices/version={version}-lossW={lossW}-sup=canidae.npy')      
         subMtx = distMtx[indices, :][:, indices]
         subMtx_uptri = subMtx[np.triu_indices(subMtx.shape[0])]
         print('subMtx.shape = ', subMtx.shape)
@@ -246,47 +246,109 @@ def finer_distance_compare(lossWs, version):
         std_dist = np.std(subMtx_uptri)
         print(f'lossW={lossW}, sum={sum_dist}, mean={mean_dist}, std={std_dist}')
     
-        # 2. histograms of uptri distance matrices.
-        # ax.hist(subMtx_uptri, label=f'lossW={lossW}', bins=bins, alpha=0.3)
-        # ax.set_xlabel('pair wise distance')
-        # ax.legend()
-
         # 3. error bars.
-        ax.errorbar(lossW, mean_dist, yerr=std_dist, capsize=3, fmt='o')
+        ax.errorbar(lossW, mean_dist, yerr=std_dist, capsize=3, fmt='o', label=f'lossW={lossW}')
         ax.set_xlabel('Weight on discrete loss')
         ax.set_ylabel('Relative distance')
-    
+
+    ax.legend()
     if df == 'ranked':
         ax.set_title('Across all 1k classes')
         plt.savefig(f'RESULTS/distPlot-version={version}.pdf')
     else:
+        # # TODO: temp adding lossW=1-semantic=0
+        # distMtx = np.load(f'_distance_matrices/version={version}-lossW=1-sup=canidae-semantic=0.npy')      
+        # subMtx = distMtx[indices, :][:, indices]
+        # subMtx_uptri = subMtx[np.triu_indices(subMtx.shape[0])]
+        # print('subMtx.shape = ', subMtx.shape)
+        # print('subMtx_uptri.shape = ', subMtx_uptri.shape)
+        # sum_dist = np.sum(subMtx_uptri)
+        # mean_dist = np.mean(subMtx_uptri)
+        # std_dist = np.std(subMtx_uptri)
+        # print(f'lossW=1, sum={sum_dist}, mean={mean_dist}, std={std_dist}')
+
         ax.set_title(f'Across subset of {df} classes')
-        plt.savefig(f'RESULTS/distPlot-version={version}-sup={df}-temp.pdf')
+        plt.savefig(f'RESULTS/distPlot-version={version}-sup={df}.pdf')
     
-    # 3. distance difference between distance matrices.
 
+# TODO: consider integrate back into the above function later.
+def dog2dog_vs_dog2rest(lossWs, version):
+    """
+    The above comparison looks at the change of distance
+    across lossWs within a subset of classes, e.g. amoung dogs.
 
-        
+    Here I look at both the above change within a subset, as well 
+    as its relationship to the rest of the classes.
+    E.g. I hope to see when more pressure on discrete loss, the overall dog cluster
+         moves away from the rest.
+    """
+    ###################
+    num_classes = 1000
+    df = 'canidae'
+    ###################
+    wnids, indices, categories = load_classes(num_classes=num_classes, df=df)
 
+    bins = 20
+    fig, ax = plt.subplots()
+    diffs = []  # diff between dog2dog and dog2rest
+    ratios = [] # ratio btw dog2dog and dog2rest
+    for i in range(len(lossWs)):
 
+        lossW = lossWs[i]
+        # the entire 1k*1k matrix
+        distMtx = np.load(f'_distance_matrices/version={version}-lossW={lossW}-sup=canidae.npy')
+        # the dogs matrix      
+        subMtx = distMtx[indices, :][:, indices]
+        # the uptri of dogs matrix
+        subMtx_uptri = subMtx[np.triu_indices(subMtx.shape[0])]
+        # what we already know about dog vs dog
+        mean_dist = np.mean(subMtx_uptri)
+        std_dist = np.std(subMtx_uptri)
 
+        # ------------------------------------------------------
+        # new stuff: dog vs rest
+        nonDog_indices = [i for i in range(1000) if i not in indices]
+        # shape = (129, 871)
+        dogVSrest_mtx = distMtx[indices, :][:, nonDog_indices]
+        dogVSrest_mean_dist = np.mean(dogVSrest_mtx)
+        dogVSrest_std_dist = np.std(dogVSrest_mtx)
+        diff = abs(mean_dist - dogVSrest_mean_dist)
+        ratio = mean_dist / dogVSrest_mean_dist
+        diffs.append(diff)
+        ratios.append(ratio)
 
+        print(f'dog2dog = {mean_dist}, dog2rest = {dogVSrest_mean_dist}, diff = {diff}, ratio = {ratio}')
 
+        if lossW == 0.1:
+            label1 = 'dog vs dog'
+            label2 = 'dog vs the rest'
+        else:
+            label1 = None
+            label2 = None
+        #ax.errorbar(lossW, mean_dist, yerr=std_dist, capsize=3, fmt='o', color='g', label=label1)
+        #ax.errorbar(lossW, dogVSrest_mean_dist, yerr=dogVSrest_std_dist, capsize=3, fmt='o', color='r', label=label2)
 
-
-
+    #ax.plot(lossWs, diffs, label='absolute difference')
+    ax.plot(lossWs, ratios)
+    ax.set_xlabel('Weight on discrete loss')
+    ax.set_ylabel('Relative distance')
+    ax.legend()
+    plt.grid(True)
+    ax.set_title(f'Dog vs dog & dog vs the rest')
+    plt.savefig(f'RESULTS/dog2rest-distPlot-version={version}-sup={df}-normalised.pdf')
 
 
 
 def execute(compute_semantic_activation=False,
             compute_distance_matrices=False,
             compute_RSA=False,
-            finer_compare=True,
+            finer_compare=False,
+            dogVSrest=True,
             ):
     ######################
     part = 'val_white'
     lr = 3e-5
-    lossW = '2'
+    lossW = '0.1-sup=canidae'
     version = '27-7-20'
     #discrete_frozen = False
     w2_depth = 2
@@ -295,7 +357,6 @@ def execute(compute_semantic_activation=False,
     # -------------------
     fname1 = 'bert'
     lossWs = [0.1, 1, 2, 3, 5, 7, 10]
-    #fnames = [f'version={version}-lossW=10']
     ######################
 
     if compute_semantic_activation:
@@ -310,10 +371,10 @@ def execute(compute_semantic_activation=False,
     
     if compute_distance_matrices:
         embedding_n_distance_matrices(
-                          version, lossW, 
-                          lang_model=True, 
-                          useVGG=False, 
-                          bert=False)
+                        version, lossW, 
+                        lang_model=True, 
+                        useVGG=False, 
+                        bert=False)
     
     if compute_RSA:
         for fname2 in fname2s:
@@ -322,7 +383,8 @@ def execute(compute_semantic_activation=False,
     if finer_compare:
         finer_distance_compare(lossWs, version=version)
     
-
+    if dogVSrest:
+        dog2dog_vs_dog2rest(lossWs, version)
 
 
 
