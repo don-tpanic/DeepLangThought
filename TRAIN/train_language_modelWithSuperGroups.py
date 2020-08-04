@@ -69,9 +69,9 @@ def specific_callbacks(run_name):
 def execute():
     ###################################################
     lr = 3e-5
-    lossWs = [5, 2, 7, 3]
+    lossWs = [0.1, 0.7]
     for lossW in lossWs:
-        version = '27-7-20'
+        version = '2-8-20'
         discrete_frozen = False
         w2_depth = 2
         supGroup = 'canidae'  # all dogs collapse into one class.
@@ -82,7 +82,7 @@ def execute():
         opt = tf.train.experimental.enable_mixed_precision_graph_rewrite(opt=Adam(lr=lr))
         model.compile(opt,
                     loss=['mse', 'categorical_crossentropy'],
-                    loss_weights=[1, lossW],
+                    loss_weights=[1-lossW, lossW],
                     metrics=['acc'])
 
         # load in trained discrete weights for cases other than 1:1

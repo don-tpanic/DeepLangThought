@@ -63,9 +63,9 @@ def specific_callbacks(run_name):
 def execute():
     ###################################################
     lr = 3e-5
-    lossWs = [2, 7]
+    lossWs = [0.9, 0.5]
     for lossW in lossWs:
-        version = '27-7-20'
+        version = '2-8-20'
         discrete_frozen = False
         w2_depth = 2
         run_name = f'{version}-lr={str(lr)}-lossW={lossW}'
@@ -77,7 +77,7 @@ def execute():
         opt = tf.train.experimental.enable_mixed_precision_graph_rewrite(opt=Adam(lr=lr))
         model.compile(opt,
                     loss=['mse', 'categorical_crossentropy'],
-                    loss_weights=[1, lossW],
+                    loss_weights=[1-lossW, lossW],
                     metrics=['acc'])
 
         # load in trained discrete weights for cases other than 1:1
