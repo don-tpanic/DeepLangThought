@@ -1,6 +1,6 @@
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '0'
+os.environ["CUDA_VISIBLE_DEVICES"]= '1'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
@@ -272,7 +272,8 @@ def finer_distance_compare(lossWs, version):
     
 
 # TODO: consider integrate back into the above function later.
-def dog2dog_vs_dog2rest(lossWs, version):
+# TODO: accomodate for other supGroups such as fish etc.
+def dog2dog_vs_dog2rest(lossWs, version, df, rest='rest'):
     """
     The above comparison looks at the change of distance
     across lossWs within a subset of classes, e.g. amoung dogs.
@@ -281,10 +282,11 @@ def dog2dog_vs_dog2rest(lossWs, version):
     as its relationship to the rest of the classes.
     E.g. I hope to see when more pressure on discrete loss, the overall dog cluster
          moves away from the rest.
+
+    Here rest can be either: all the rest or some other superordinate group.
     """
     ###################
     num_classes = 1000
-    df = 'canidae'
     ###################
     wnids, indices, categories = load_classes(num_classes=num_classes, df=df)
 
@@ -296,7 +298,7 @@ def dog2dog_vs_dog2rest(lossWs, version):
 
         lossW = lossWs[i]
         # the entire 1k*1k matrix
-        distMtx = np.load(f'_distance_matrices/version={version}-lossW={lossW}-sup=canidae.npy')
+        distMtx = np.load(f'_distance_matrices/version={version}-lossW={lossW}-sup={df}.npy')
         # the dogs matrix      
         subMtx = distMtx[indices, :][:, indices]
         # the uptri of dogs matrix
@@ -307,7 +309,11 @@ def dog2dog_vs_dog2rest(lossWs, version):
 
         # ------------------------------------------------------
         # new stuff: dog vs rest
-        nonDog_indices = [i for i in range(1000) if i not in indices]
+        if rest == 'all':
+            nonDog_indices = [i for i in range(1000) if i not in indices]
+        else:
+            _, nonDog_indices, _ = load_classes(num_classes=num_classes, df=rest)
+
         # shape = (129, 871)
         dogVSrest_mtx = distMtx[indices, :][:, nonDog_indices]
         dogVSrest_mean_dist = np.mean(dogVSrest_mtx)
@@ -317,11 +323,11 @@ def dog2dog_vs_dog2rest(lossWs, version):
         diffs.append(diff)
         ratios.append(ratio)
 
-        print(f'dog2dog = {mean_dist}, dog2rest = {dogVSrest_mean_dist}, diff = {diff}, ratio = {ratio}')
+        print(f'dog2dog = {mean_dist}, dog2{rest} = {dogVSrest_mean_dist}, diff = {diff}, ratio = {ratio}')
 
         if lossW == 0.1:
-            label1 = 'dog vs dog'
-            label2 = 'dog vs the rest'
+            label1 = f'{df} vs {df}'
+            label2 = f'{df} vs the {rest}'
         else:
             label1 = None
             label2 = None
@@ -332,11 +338,10 @@ def dog2dog_vs_dog2rest(lossWs, version):
     ax.plot(lossWs, ratios)
     ax.set_xlabel('Weight on discrete loss')
     ax.set_ylabel('Relative distance')
-    ax.legend()
+    #ax.legend()
     plt.grid(True)
-    ax.set_title(f'Dog vs dog & dog vs the rest')
-    plt.savefig(f'RESULTS/dog2rest-distPlot-version={version}-sup={df}-normalised.pdf')
-
+    ax.set_title(f'{df} vs {df} & {df} vs the {rest}')
+    plt.savefig(f'RESULTS/{df}2{rest}-distPlot-version={version}-sup={df}-normalised.pdf')
 
 
 def execute(compute_semantic_activation=False,
@@ -348,33 +353,37 @@ def execute(compute_semantic_activation=False,
     ######################
     part = 'val_white'
     lr = 3e-5
-    lossW = '0.1-sup=canidae'
     version = '27-7-20'
-    #discrete_frozen = False
     w2_depth = 2
-    run_name = f'{version}-lr={str(lr)}-lossW={lossW}'
     intersect_layer = 'semantic'
-    # -------------------
+    version = '27-7-20'
     fname1 = 'bert'
-    lossWs = [0.1, 1, 2, 3, 5, 7, 10]
-    ######################
+    df = 'fish'
+    #lossW = '0.1-sup=canidae'
+    #discrete_frozen = False
 
-    if compute_semantic_activation:
-        model = ready_model(w2_depth=w2_depth, 
-                            run_name=run_name, 
-                            lossW=lossW, 
-                            intersect_layer=intersect_layer)
-        grab_activations(model=model, 
-                        part=part, 
-                        version=version,
-                        lossW=lossW)
-    
-    if compute_distance_matrices:
-        embedding_n_distance_matrices(
-                        version, lossW, 
-                        lang_model=True, 
-                        useVGG=False, 
-                        bert=False)
+    # TODO:
+    lossWs = [0.1, 1, 2, 3, 5, 7, 10]
+    for lossW in lossWs:
+        lossW = f'{lossW}-sup={df}'
+        run_name = f'{version}-lr={str(lr)}-lossW={lossW}'
+
+        if compute_semantic_activation:
+            model = ready_model(w2_depth=w2_depth, 
+                                run_name=run_name, 
+                                lossW=lossW, 
+                                intersect_layer=intersect_layer)
+            grab_activations(model=model, 
+                            part=part, 
+                            version=version,
+                            lossW=lossW)
+        
+        if compute_distance_matrices:
+            embedding_n_distance_matrices(
+                            version, lossW, 
+                            lang_model=True, 
+                            useVGG=False, 
+                            bert=False)
     
     if compute_RSA:
         for fname2 in fname2s:
@@ -384,7 +393,7 @@ def execute(compute_semantic_activation=False,
         finer_distance_compare(lossWs, version=version)
     
     if dogVSrest:
-        dog2dog_vs_dog2rest(lossWs, version)
+        dog2dog_vs_dog2rest(lossWs, version, df='fish', rest='bird')
 
 
 
