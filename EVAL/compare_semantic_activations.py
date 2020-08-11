@@ -1,6 +1,6 @@
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '1'
+os.environ["CUDA_VISIBLE_DEVICES"]= '3'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
@@ -70,7 +70,11 @@ def grab_activations(model, part, version, lossW):
         assert avg_vec.shape == (768,)
 
         # save avg vec
-        np.save(f'_computed_activations/{version}/lossW={lossW}/{category}.npy', avg_vec)
+        save_path = f'_computed_activations/{version}/lossW={lossW}'
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
+        #np.save(f'_computed_activations/{version}/lossW={lossW}/{category}.npy', avg_vec)
+        np.save(os.path.join(save_path, f'{category}.npy'), avg_vec)
 
 
 ### tsne ###
@@ -381,8 +385,8 @@ def execute(compute_semantic_activation=False,
             compute_distance_matrices=False,
             compute_RSA=False,
             finer_compare=False,
-            dogVSrest=False,
-            dogVScat=True,
+            dogVSrest=True,
+            dogVScat=False,
             ):
     ######################
     part = 'val_white'
@@ -392,7 +396,7 @@ def execute(compute_semantic_activation=False,
     intersect_layer = 'semantic'
     version = '27-7-20'
     fname1 = 'bert'
-    df = 'fish'
+    df = 'amphibian'
     #lossW = '0.1-sup=canidae'
     #discrete_frozen = False
 
@@ -430,7 +434,7 @@ def execute(compute_semantic_activation=False,
         dog2dog_vs_dog2rest(lossWs, version, df)
 
     if dogVScat:
-        dog2dog_vs_dog2cat(lossWs, version, df_1='bird', df_2='fish')
+        dog2dog_vs_dog2cat(lossWs, version, df_1='bird', df_2='reptile')
 
 
 

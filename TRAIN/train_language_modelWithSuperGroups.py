@@ -5,7 +5,7 @@ when training the discrete term.
 """
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '1'
+os.environ["CUDA_VISIBLE_DEVICES"]= '4'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
@@ -69,12 +69,12 @@ def specific_callbacks(run_name):
 def execute():
     ###################################################
     lr = 3e-5
-    lossWs = [0.1, 0.7]
+    lossWs = [0.1, 1, 2, 3, 5, 7, 10]
     for lossW in lossWs:
-        version = '2-8-20'
+        version = '27-7-20'
         discrete_frozen = False
         w2_depth = 2
-        supGroup = 'canidae'  # all dogs collapse into one class.
+        supGroup = 'reptile'  # all dogs collapse into one class.
         run_name = f'{version}-lr={str(lr)}-lossW={lossW}-sup={supGroup}'
         ###################################################
         # model
@@ -82,7 +82,7 @@ def execute():
         opt = tf.train.experimental.enable_mixed_precision_graph_rewrite(opt=Adam(lr=lr))
         model.compile(opt,
                     loss=['mse', 'categorical_crossentropy'],
-                    loss_weights=[1-lossW, lossW],
+                    loss_weights=[1, lossW],
                     metrics=['acc'])
 
         # load in trained discrete weights for cases other than 1:1
