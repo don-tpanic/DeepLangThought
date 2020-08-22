@@ -306,7 +306,7 @@ def dog2dog_vs_dog2rest(lossWs, version, df):
         # the uptri of dogs matrix
         subMtx_uptri = subMtx[np.triu_indices(subMtx.shape[0])]
         # what we already know about dog vs dog
-        mean_dist = np.mean(subMtx_uptri)
+        mean_dist = np.median(subMtx_uptri)
         std_dist = np.std(subMtx_uptri)
 
         # ------------------------------------------------------
@@ -314,7 +314,7 @@ def dog2dog_vs_dog2rest(lossWs, version, df):
         nonDog_indices = [i for i in range(1000) if i not in indices]
         # shape = (129, 871)
         dogVSrest_mtx = distMtx[indices, :][:, nonDog_indices]
-        dogVSrest_mean_dist = np.mean(dogVSrest_mtx)
+        dogVSrest_mean_dist = np.median(dogVSrest_mtx)
         dogVSrest_std_dist = np.std(dogVSrest_mtx)
         diff = abs(mean_dist - dogVSrest_mean_dist)
         ratio = mean_dist / dogVSrest_mean_dist
@@ -339,8 +339,7 @@ def dog2dog_vs_dog2rest(lossWs, version, df):
     #ax.legend()
     plt.grid(True)
     ax.set_title(f'{df} vs {df} & {df} vs the rest')
-    plt.savefig(f'RESULTS/{df}2rest-distPlot-version={version}-sup={df}-normalised.pdf')
-
+    plt.savefig(f'RESULTS/{df}2rest-distPlot-version={version}-sup={df}-normalised-median.pdf')
 
 
 def dog2dog_vs_dog2cat(lossWs, version, df_1, df_2, num_classes=1000):
@@ -396,7 +395,7 @@ def execute(compute_semantic_activation=False,
     intersect_layer = 'semantic'
     version = '27-7-20'
     fname1 = 'bert'
-    df = 'amphibian'
+    df = 'bird'
     #lossW = '0.1-sup=canidae'
     #discrete_frozen = False
 
