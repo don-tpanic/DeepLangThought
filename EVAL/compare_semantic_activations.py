@@ -383,8 +383,8 @@ def dog2dog_vs_dog2cat(lossWs, version, df_1, df_2, num_classes=1000):
 def execute(compute_semantic_activation=False,
             compute_distance_matrices=False,
             compute_RSA=False,
-            finer_compare=False,
-            dogVSrest=True,
+            finer_compare=True,
+            dogVSrest=False,
             dogVScat=False,
             ):
     ######################

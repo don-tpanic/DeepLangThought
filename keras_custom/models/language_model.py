@@ -67,7 +67,6 @@ def lang_model(w2_depth, discrete_frozen=False, num_labels=1000, seed=42):
      semantic_output = Dense(768, activation=None, name='semantic',
                kernel_initializer=keras.initializers.glorot_normal(seed=seed))(x)
 
-
      # 768 * 1000 + 1000 = 769000
      discrete_output = Dense(num_labels, activation='softmax', name='discrete',
                kernel_initializer=keras.initializers.glorot_normal(seed=seed))(semantic_output)
@@ -79,11 +78,11 @@ def lang_model(w2_depth, discrete_frozen=False, num_labels=1000, seed=42):
           model.get_layer('discrete').trainable = False
           print('discrete layer is not trainable.')
 
-     #model.summary()
-     #plot_model(model, to_file='lang_model.png')
+     model.summary()
+     plot_model(model, to_file='lang_model.png')
      return model
 
 
 if __name__ == '__main__':
-     lang_model()
+     lang_model(w2_depth=1)
 
