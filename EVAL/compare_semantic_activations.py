@@ -233,6 +233,7 @@ def finer_distance_compare(lossWs, version):
     df = 'canidae'
     ###################
     wnids, indices, categories = load_classes(num_classes=num_classes, df=df)
+    print('len of df = ', len(indices))
 
     bins = 20
     fig, ax = plt.subplots()
@@ -240,7 +241,7 @@ def finer_distance_compare(lossWs, version):
 
         lossW = lossWs[i]
 
-        distMtx = np.load(f'_distance_matrices/version={version}-lossW={lossW}-sup=canidae.npy')      
+        distMtx = np.load(f'_distance_matrices/version={version}-lossW={lossW}.npy')      
         subMtx = distMtx[indices, :][:, indices]
         subMtx_uptri = subMtx[np.triu_indices(subMtx.shape[0])]
         print('subMtx.shape = ', subMtx.shape)
@@ -258,7 +259,7 @@ def finer_distance_compare(lossWs, version):
     ax.legend()
     if df == 'ranked':
         ax.set_title('Across all 1k classes')
-        plt.savefig(f'RESULTS/distPlot-version={version}.pdf')
+        plt.savefig(f'RESULTS/distPlot-version={version}-TEST.pdf')
     else:
         # # TODO: temp adding lossW=1-semantic=0
         # distMtx = np.load(f'_distance_matrices/version={version}-lossW=1-sup=canidae-semantic=0.npy')      
@@ -272,7 +273,7 @@ def finer_distance_compare(lossWs, version):
         # print(f'lossW=1, sum={sum_dist}, mean={mean_dist}, std={std_dist}')
 
         ax.set_title(f'Across subset of {df} classes')
-        plt.savefig(f'RESULTS/distPlot-version={version}-sup={df}.pdf')
+        plt.savefig(f'RESULTS/distPlot-version={version}-sup={df}-TEST.pdf')
     
 
 # TODO: consider integrate back into the above function later.
@@ -306,7 +307,7 @@ def dog2dog_vs_dog2rest(lossWs, version, df):
         # the uptri of dogs matrix
         subMtx_uptri = subMtx[np.triu_indices(subMtx.shape[0])]
         # what we already know about dog vs dog
-        mean_dist = np.median(subMtx_uptri)
+        mean_dist = np.mean(subMtx_uptri)
         std_dist = np.std(subMtx_uptri)
 
         # ------------------------------------------------------
@@ -314,14 +315,14 @@ def dog2dog_vs_dog2rest(lossWs, version, df):
         nonDog_indices = [i for i in range(1000) if i not in indices]
         # shape = (129, 871)
         dogVSrest_mtx = distMtx[indices, :][:, nonDog_indices]
-        dogVSrest_mean_dist = np.median(dogVSrest_mtx)
+        dogVSrest_mean_dist = np.mean(dogVSrest_mtx)
         dogVSrest_std_dist = np.std(dogVSrest_mtx)
         diff = abs(mean_dist - dogVSrest_mean_dist)
         ratio = mean_dist / dogVSrest_mean_dist
-        diffs.append(diff)
+        #diffs.append(diff)
         ratios.append(ratio)
 
-        print(f'dog2dog = {mean_dist}, dog2rest = {dogVSrest_mean_dist}, diff = {diff}, ratio = {ratio}')
+        print(f'dog2dog = {mean_dist}, dog2rest = {dogVSrest_mean_dist}, ratio = {ratio}')
 
         if lossW == 0.1:
             label1 = f'{df} vs {df}'
@@ -329,17 +330,17 @@ def dog2dog_vs_dog2rest(lossWs, version, df):
         else:
             label1 = None
             label2 = None
-        #ax.errorbar(lossW, mean_dist, yerr=std_dist, capsize=3, fmt='o', color='g', label=label1)
-        #ax.errorbar(lossW, dogVSrest_mean_dist, yerr=dogVSrest_std_dist, capsize=3, fmt='o', color='r', label=label2)
+        ax.errorbar(lossW, mean_dist, yerr=std_dist, capsize=3, fmt='o', color='g', label=label1)
+        ax.errorbar(lossW, dogVSrest_mean_dist, yerr=dogVSrest_std_dist, capsize=3, fmt='o', color='r', label=label2)
 
-    #ax.plot(lossWs, diffs, label='absolute difference')
-    ax.plot(lossWs, ratios)
+    #ax.plot(lossWs, ratios)
     ax.set_xlabel('Weight on discrete loss')
     ax.set_ylabel('Relative distance')
-    #ax.legend()
+    ax.legend()
     plt.grid(True)
     ax.set_title(f'{df} vs {df} & {df} vs the rest')
-    plt.savefig(f'RESULTS/{df}2rest-distPlot-version={version}-sup={df}-normalised-median.pdf')
+    plt.savefig(f'RESULTS/{df}2rest-distPlot-version={version}-sup={df}-TEST.pdf')
+    print('plotted.')
 
 
 def dog2dog_vs_dog2cat(lossWs, version, df_1, df_2, num_classes=1000):
