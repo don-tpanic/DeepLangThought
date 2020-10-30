@@ -231,7 +231,7 @@ def finer_distance_compare(lossWs, version, part):
     # 1. overall distance for subset of classes
     ###################
     num_classes = 1000
-    df = 'canidae'
+    df = 'ranked'
     ###################
     wnids, indices, categories = load_classes(num_classes=num_classes, df=df)
     print('len of df = ', len(indices))
@@ -302,7 +302,8 @@ def dog2dog_vs_dog2rest(lossWs, version, df, part):
 
         lossW = lossWs[i]
         # the entire 1k*1k matrix
-        distMtx = np.load(f'RESRC_{part}/_distance_matrices/version={version}-lossW={lossW}.npy')
+        distMtx = np.load(f'RESRC_{part}/_distance_matrices/version={version}-lossW={lossW}-sup={df}.npy')
+        #print('WARNING: regular model used on superordinates!!')
         # the dogs matrix      
         subMtx = distMtx[indices, :][:, indices]
         # the uptri of dogs matrix
@@ -318,10 +319,10 @@ def dog2dog_vs_dog2rest(lossWs, version, df, part):
         dogVSrest_mtx = distMtx[indices, :][:, nonDog_indices]
         dogVSrest_mean_dist = np.mean(dogVSrest_mtx)
         dogVSrest_std_dist = np.std(dogVSrest_mtx)
-        diff = abs(mean_dist - dogVSrest_mean_dist)
         ratio = mean_dist / dogVSrest_mean_dist
-        #diffs.append(diff)
         ratios.append(ratio)
+        #diff = abs(mean_dist - dogVSrest_mean_dist)
+        #diffs.append(diff)
 
         print(f'dog2dog = {mean_dist}, dog2rest = {dogVSrest_mean_dist}, ratio = {ratio}')
         if df == 'canidae':
@@ -332,16 +333,16 @@ def dog2dog_vs_dog2rest(lossWs, version, df, part):
         else:
             label1 = None
             label2 = None
-        #ax.errorbar(lossW, mean_dist, yerr=std_dist, capsize=3, fmt='o', color='g', label=label1)
-        #ax.errorbar(lossW, dogVSrest_mean_dist, yerr=dogVSrest_std_dist, capsize=3, fmt='o', color='r', label=label2)
+        ax.errorbar(lossW, mean_dist, yerr=std_dist, capsize=3, fmt='o', color='g', label=label1)
+        ax.errorbar(lossW, dogVSrest_mean_dist, yerr=dogVSrest_std_dist, capsize=3, fmt='o', color='r', label=label2)
 
-    ax.plot(lossWs, ratios)
+    #ax.plot(lossWs, ratios)
     ax.set_xlabel('Weight on discrete loss')
     ax.set_ylabel('Relative distance')
     ax.legend()
     plt.grid(True)
     ax.set_title(f'{df} vs {df} & {df} vs the rest')
-    plt.savefig(f'RESULTS/{part}/version={version}-regularButforSuperordinate-NORM-{df}.pdf')
+    plt.savefig(f'RESULTS/{part}/version={version}-Superordinate-{df}.pdf')
     print('plotted.')
 
 
@@ -398,11 +399,11 @@ def execute(compute_semantic_activation=False,
     intersect_layer = 'semantic'
     version = '27-7-20'
     fname1 = 'bert'
-    df = 'bird'
+    df = 'fish'
     #lossW = '0.1-sup=canidae'
     #discrete_frozen = False
 
-    lossWs = [0, 0.1, 1, 2, 3, 5, 7, 10]
+    lossWs = [0.1, 1, 2, 3, 5, 7, 10]
     for lossW in lossWs:
         #lossW = f'{lossW}-sup={df}'
         run_name = f'{version}-lr={str(lr)}-lossW={lossW}'
