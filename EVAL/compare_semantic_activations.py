@@ -70,7 +70,7 @@ def grab_activations(model, part, version, lossW):
         assert avg_vec.shape == (768,)
 
         # save avg vec
-        save_path = f'_computed_activations/{version}/lossW={lossW}'
+        save_path = f'RESRC_{part}/_computed_activations/{version}/lossW={lossW}'
         if not os.path.exists(save_path):
             os.makedirs(save_path)
         #np.save(f'_computed_activations/{version}/lossW={lossW}/{category}.npy', avg_vec)
@@ -145,7 +145,7 @@ def run_tsne(version, lossW):
 
 
 ### embedding & distance matrix correlation ###
-def embedding_n_distance_matrices(version, lossW, lang_model=False, useVGG=False, bert=False):
+def embedding_n_distance_matrices(version, lossW, part, lang_model=False, useVGG=False, bert=False):
     """
     Given a model,
     compute a embedding and a distance matrix for targeted activations.
@@ -167,27 +167,27 @@ def embedding_n_distance_matrices(version, lossW, lang_model=False, useVGG=False
 
         for category in categories:
             if useVGG:
-                avg_vec = np.load(f'_computed_activations/block4_pool=vgg16/{category}.npy')
+                avg_vec = np.load(f'RESRC_{part}/_computed_activations/block4_pool=vgg16/{category}.npy')
                 fname = 'block4_pool'
             elif lang_model:
-                avg_vec = np.load(f'_computed_activations/{version}/lossW={lossW}/{category}.npy')
+                avg_vec = np.load(f'RESRC_{part}/_computed_activations/{version}/lossW={lossW}/{category}.npy')
                 fname = f'version={version}-lossW={lossW}'
             embed_mtx.append(avg_vec)
 
     X = np.array(embed_mtx)
     print(f'fname={fname}, X.shape = ', X.shape)
-    np.save(f'_embedding_matrices/{fname}.npy', X)
+    np.save(f'RESRC_{part}/_embedding_matrices/{fname}.npy', X)
     print('embedding matrix saved.')
 
 
     disMtx = distance_matrix(X, X)
     print(f'fname={fname}, disMtx.shape = ', disMtx.shape)
     # save based on fname
-    np.save(f'_distance_matrices/{fname}.npy', disMtx)
+    np.save(f'RESRC_{part}/_distance_matrices/{fname}.npy', disMtx)
     print('distance matrix saved.')
 
 
-def RSA(fname1, fname2, mtx_type='distance'):
+def RSA(fname1, fname2, mtx_type='distance', part='val_white'):
     """
     Supply two models' distance matrices
     or embedding matrices,
@@ -200,10 +200,11 @@ def RSA(fname1, fname2, mtx_type='distance'):
     """
     from scipy.stats import spearmanr
 
-    mtx1 = np.load(f'_{mtx_type}_matrices/{fname1}.npy')
-    mtx2 = np.load(f'_{mtx_type}_matrices/{fname2}.npy')
+    mtx1 = np.load(f'RESRC_{part}/_{mtx_type}_matrices/{fname1}.npy')
+    mtx2 = np.load(f'RESRC_{part}/_{mtx_type}_matrices/{fname2}.npy')
     assert mtx1.shape == mtx2.shape
 
+    print(f'**** {fname1} vs {fname2} ****')
     if mtx_type == 'distance':
         uptri1 = mtx1[np.triu_indices(mtx1.shape[0])]
         uptri2 = mtx2[np.triu_indices(mtx2.shape[0])]
@@ -218,7 +219,7 @@ def RSA(fname1, fname2, mtx_type='distance'):
 
 
 ### finer compare ###
-def finer_distance_compare(lossWs, version):
+def finer_distance_compare(lossWs, version, part):
     """
     After showing high correlation figure across
     levels of discrete pressure,
@@ -241,7 +242,7 @@ def finer_distance_compare(lossWs, version):
 
         lossW = lossWs[i]
 
-        distMtx = np.load(f'_distance_matrices/version={version}-lossW={lossW}.npy')      
+        distMtx = np.load(f'RESRC_{part}/_distance_matrices/version={version}-lossW={lossW}.npy')      
         subMtx = distMtx[indices, :][:, indices]
         subMtx_uptri = subMtx[np.triu_indices(subMtx.shape[0])]
         print('subMtx.shape = ', subMtx.shape)
@@ -278,7 +279,7 @@ def finer_distance_compare(lossWs, version):
 
 # TODO: consider integrate back into the above function later.
 # TODO: accomodate for other supGroups such as fish etc.
-def dog2dog_vs_dog2rest(lossWs, version, df):
+def dog2dog_vs_dog2rest(lossWs, version, df, part):
     """
     The above comparison looks at the change of distance
     across lossWs within a subset of classes, e.g. amoung dogs.
@@ -301,7 +302,7 @@ def dog2dog_vs_dog2rest(lossWs, version, df):
 
         lossW = lossWs[i]
         # the entire 1k*1k matrix
-        distMtx = np.load(f'_distance_matrices/version={version}-lossW={lossW}-sup={df}.npy')
+        distMtx = np.load(f'RESRC_{part}/_distance_matrices/version={version}-lossW={lossW}-sup={df}.npy')
         # the dogs matrix      
         subMtx = distMtx[indices, :][:, indices]
         # the uptri of dogs matrix
@@ -381,10 +382,10 @@ def dog2dog_vs_dog2cat(lossWs, version, df_1, df_2, num_classes=1000):
     print('This eval is currently problematic due to unclear comparison....Think more...')
 
 
-def execute(compute_semantic_activation=False,
+def execute(compute_semantic_activation=True,
             compute_distance_matrices=False,
             compute_RSA=False,
-            finer_compare=True,
+            finer_compare=False,
             dogVSrest=False,
             dogVScat=False,
             ):
@@ -401,9 +402,9 @@ def execute(compute_semantic_activation=False,
     #discrete_frozen = False
 
     # TODO:
-    lossWs = [0.1, 1, 2, 3, 5, 7, 10]
+    lossWs = [0, 0.1, 1, 2, 3, 5, 7, 10]
     for lossW in lossWs:
-        lossW = f'{lossW}-sup={df}'
+        #lossW = f'{lossW}-sup={df}'
         run_name = f'{version}-lr={str(lr)}-lossW={lossW}'
 
         if compute_semantic_activation:
@@ -418,20 +419,24 @@ def execute(compute_semantic_activation=False,
         
         if compute_distance_matrices:
             embedding_n_distance_matrices(
-                            version, lossW, 
+                            version, lossW,
+                            part, 
                             lang_model=True, 
                             useVGG=False, 
                             bert=False)
     
     if compute_RSA:
+        fname2s = []
+        for lossW in lossWs:
+            fname2s.append(f'version={version}-lossW={lossW}')
         for fname2 in fname2s:
-            RSA(fname1, fname2, mtx_type='embedding')
+            RSA(fname1, fname2, mtx_type='distance', part=part)
     
     if finer_compare:
-        finer_distance_compare(lossWs, version=version)
+        finer_distance_compare(lossWs, version, part)
     
     if dogVSrest:
-        dog2dog_vs_dog2rest(lossWs, version, df)
+        dog2dog_vs_dog2rest(lossWs, version, df, part)
 
     if dogVScat:
         dog2dog_vs_dog2cat(lossWs, version, df_1='bird', df_2='reptile')
