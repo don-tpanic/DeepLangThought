@@ -290,7 +290,7 @@ def dog2dog_vs_dog2rest(lossWs, version, df, part):
          moves away from the rest.
     """
     ###################
-    num_classes = 1000
+    num_classes = 129
     ###################
     wnids, indices, categories = load_classes(num_classes=num_classes, df=df)
 
@@ -302,7 +302,7 @@ def dog2dog_vs_dog2rest(lossWs, version, df, part):
 
         lossW = lossWs[i]
         # the entire 1k*1k matrix
-        distMtx = np.load(f'RESRC_{part}/_distance_matrices/version={version}-lossW={lossW}-sup={df}.npy')
+        distMtx = np.load(f'RESRC_{part}/_distance_matrices/version={version}-lossW={lossW}.npy')
         # the dogs matrix      
         subMtx = distMtx[indices, :][:, indices]
         # the uptri of dogs matrix
@@ -324,23 +324,24 @@ def dog2dog_vs_dog2rest(lossWs, version, df, part):
         ratios.append(ratio)
 
         print(f'dog2dog = {mean_dist}, dog2rest = {dogVSrest_mean_dist}, ratio = {ratio}')
-
+        if df == 'canidae':
+            df = 'dog'
         if lossW == 0.1:
             label1 = f'{df} vs {df}'
             label2 = f'{df} vs the rest'
         else:
             label1 = None
             label2 = None
-        ax.errorbar(lossW, mean_dist, yerr=std_dist, capsize=3, fmt='o', color='g', label=label1)
-        ax.errorbar(lossW, dogVSrest_mean_dist, yerr=dogVSrest_std_dist, capsize=3, fmt='o', color='r', label=label2)
+        #ax.errorbar(lossW, mean_dist, yerr=std_dist, capsize=3, fmt='o', color='g', label=label1)
+        #ax.errorbar(lossW, dogVSrest_mean_dist, yerr=dogVSrest_std_dist, capsize=3, fmt='o', color='r', label=label2)
 
-    #ax.plot(lossWs, ratios)
+    ax.plot(lossWs, ratios)
     ax.set_xlabel('Weight on discrete loss')
     ax.set_ylabel('Relative distance')
     ax.legend()
     plt.grid(True)
     ax.set_title(f'{df} vs {df} & {df} vs the rest')
-    plt.savefig(f'RESULTS/{df}2rest-distPlot-version={version}-sup={df}-TEST.pdf')
+    plt.savefig(f'RESULTS/{part}/version={version}-regularButforSuperordinate-NORM-{df}.pdf')
     print('plotted.')
 
 
@@ -382,11 +383,11 @@ def dog2dog_vs_dog2cat(lossWs, version, df_1, df_2, num_classes=1000):
     print('This eval is currently problematic due to unclear comparison....Think more...')
 
 
-def execute(compute_semantic_activation=True,
+def execute(compute_semantic_activation=False,
             compute_distance_matrices=False,
             compute_RSA=False,
             finer_compare=False,
-            dogVSrest=False,
+            dogVSrest=True,
             dogVScat=False,
             ):
     ######################
@@ -401,7 +402,6 @@ def execute(compute_semantic_activation=True,
     #lossW = '0.1-sup=canidae'
     #discrete_frozen = False
 
-    # TODO:
     lossWs = [0, 0.1, 1, 2, 3, 5, 7, 10]
     for lossW in lossWs:
         #lossW = f'{lossW}-sup={df}'
