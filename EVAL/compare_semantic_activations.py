@@ -1,6 +1,6 @@
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '3'
+os.environ["CUDA_VISIBLE_DEVICES"]= '0'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
@@ -73,7 +73,6 @@ def grab_activations(model, part, version, lossW):
         save_path = f'RESRC_{part}/_computed_activations/{version}/lossW={lossW}'
         if not os.path.exists(save_path):
             os.makedirs(save_path)
-        #np.save(f'_computed_activations/{version}/lossW={lossW}/{category}.npy', avg_vec)
         np.save(os.path.join(save_path, f'{category}.npy'), avg_vec)
 
 
@@ -228,6 +227,7 @@ def finer_distance_compare(lossWs, version, part):
     a subset of classes to see if discrete pressure leads
     to systematic changes in the semantic space.
     """
+    print('version = ', version)
     # 1. overall distance for subset of classes
     ###################
     num_classes = 1000
@@ -260,7 +260,8 @@ def finer_distance_compare(lossWs, version, part):
     ax.legend()
     if df == 'ranked':
         ax.set_title('Across all 1k classes')
-        plt.savefig(f'RESULTS/distPlot-version={version}-TEST.pdf')
+        #plt.savefig(f'RESULTS/distPlot-version={version}-TEST.pdf')
+        print('plotted.')
     else:
         # # TODO: temp adding lossW=1-semantic=0
         # distMtx = np.load(f'_distance_matrices/version={version}-lossW=1-sup=canidae-semantic=0.npy')      
@@ -275,6 +276,7 @@ def finer_distance_compare(lossWs, version, part):
 
         ax.set_title(f'Across subset of {df} classes')
         plt.savefig(f'RESULTS/distPlot-version={version}-sup={df}-TEST.pdf')
+        print('plotted.')
     
 
 # TODO: consider integrate back into the above function later.
@@ -387,8 +389,8 @@ def dog2dog_vs_dog2cat(lossWs, version, df_1, df_2, num_classes=1000):
 def execute(compute_semantic_activation=False,
             compute_distance_matrices=False,
             compute_RSA=False,
-            finer_compare=False,
-            dogVSrest=True,
+            finer_compare=True,
+            dogVSrest=False,
             dogVScat=False,
             ):
     ######################
@@ -397,13 +399,13 @@ def execute(compute_semantic_activation=False,
     version = '27-7-20'
     w2_depth = 2
     intersect_layer = 'semantic'
-    version = '27-7-20'
     fname1 = 'bert'
     df = 'fish'
     #lossW = '0.1-sup=canidae'
     #discrete_frozen = False
 
-    lossWs = [0.1, 1, 2, 3, 5, 7, 10]
+    #lossWs = [0.1, 1, 2, 3, 5, 7, 10]
+    lossWs = [10]
     for lossW in lossWs:
         #lossW = f'{lossW}-sup={df}'
         run_name = f'{version}-lr={str(lr)}-lossW={lossW}'

@@ -5,7 +5,7 @@ when training the discrete term.
 """
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '1'
+os.environ["CUDA_VISIBLE_DEVICES"]= '0'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
@@ -68,10 +68,11 @@ def specific_callbacks(run_name):
 
 def execute():
     ###################################################
-    lr = 3e-5
-    lossWs = [0.1, 1, 2, 3, 5, 7, 10]
+    lr = 3e-3
+    #lossWs = [0.1, 1, 2, 3, 5, 7, 10]
+    lossWs = [1]
     for lossW in lossWs:
-        version = '27-7-20'
+        version = '30-10-20'
         discrete_frozen = False
         w2_depth = 2
         supGroup = 'reptile'  # all dogs collapse into one class.
@@ -86,11 +87,11 @@ def execute():
                     metrics=['acc'])
 
         # load in trained discrete weights for cases other than 1:1
-        if discrete_frozen:
-            with open(f'_trained_weights/discrete_weights-{version}-lr={lr}-lossW=1.pkl', 'rb') as f:
-                discrete_weights = pickle.load(f)
-            model.get_layer('discrete').set_weights([discrete_weights[0], discrete_weights[1]])
-            print('loaded trained discrete weights')
+        # if discrete_frozen:
+        #     with open(f'_trained_weights/discrete_weights-{version}-lr={lr}-lossW=1.pkl', 'rb') as f:
+        #         discrete_weights = pickle.load(f)
+        #     model.get_layer('discrete').set_weights([discrete_weights[0], discrete_weights[1]])
+        #     print('loaded trained discrete weights')
         
         # data
         train_gen, train_steps = train_n_val_data_gen(subset='training')
