@@ -6,7 +6,7 @@ _trained_weights/
 log/
 *.out
 ._*
-
+*.h5
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
