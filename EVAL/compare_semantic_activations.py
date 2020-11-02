@@ -298,7 +298,6 @@ def dog2dog_vs_dog2rest(lossWs, version, df, part):
 
     bins = 20
     fig, ax = plt.subplots()
-    diffs = []  # diff between dog2dog and dog2rest
     ratios = [] # ratio btw dog2dog and dog2rest
     for i in range(len(lossWs)):
 
@@ -323,10 +322,9 @@ def dog2dog_vs_dog2rest(lossWs, version, df, part):
         dogVSrest_std_dist = np.std(dogVSrest_mtx)
         ratio = mean_dist / dogVSrest_mean_dist
         ratios.append(ratio)
-        #diff = abs(mean_dist - dogVSrest_mean_dist)
-        #diffs.append(diff)
+        print(f'dog2dog = {mean_dist}(std = {std_dist}), dog2rest = {dogVSrest_mean_dist}(std = {dogVSrest_std_dist}), ratio = {ratio}')
+        exit()
 
-        print(f'dog2dog = {mean_dist}, dog2rest = {dogVSrest_mean_dist}, ratio = {ratio}')
         if df == 'canidae':
             df = 'dog'
         if lossW == 0.1:
@@ -389,8 +387,8 @@ def dog2dog_vs_dog2cat(lossWs, version, df_1, df_2, num_classes=1000):
 def execute(compute_semantic_activation=False,
             compute_distance_matrices=False,
             compute_RSA=False,
-            finer_compare=True,
-            dogVSrest=False,
+            finer_compare=False,
+            dogVSrest=True,
             dogVScat=False,
             ):
     ######################
@@ -400,14 +398,14 @@ def execute(compute_semantic_activation=False,
     w2_depth = 2
     intersect_layer = 'semantic'
     fname1 = 'bert'
-    df = 'fish'
+    df = 'reptile'
     #lossW = '0.1-sup=canidae'
     #discrete_frozen = False
 
     #lossWs = [0.1, 1, 2, 3, 5, 7, 10]
-    lossWs = [10]
+    lossWs = [1]
     for lossW in lossWs:
-        #lossW = f'{lossW}-sup={df}'
+        lossW = f'{lossW}-sup={df}'
         run_name = f'{version}-lr={str(lr)}-lossW={lossW}'
 
         if compute_semantic_activation:
@@ -419,7 +417,6 @@ def execute(compute_semantic_activation=False,
                             part=part, 
                             version=version,
                             lossW=lossW)
-        
         if compute_distance_matrices:
             embedding_n_distance_matrices(
                             version, lossW,

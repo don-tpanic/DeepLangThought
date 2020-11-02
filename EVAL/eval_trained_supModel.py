@@ -1,6 +1,6 @@
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '2'
+os.environ["CUDA_VISIBLE_DEVICES"]= '0'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
@@ -27,9 +27,9 @@ at the output layer when lossW is high.
 def execute():
     ######################
     part = 'val_white'
-    lr = 3e-5
-    for lossW in ['0.1-sup=canidae', '1-sup=canidae', '10-sup=canidae']:
-        version = '27-7-20'
+    lr = 3e-3
+    for lossW in ['1-sup=reptile']:
+        version = '30-10-20'
         #discrete_frozen = False
         w2_depth = 2
         run_name = f'{version}-lr={str(lr)}-lossW={lossW}'
@@ -44,7 +44,7 @@ def execute():
 
         wordvec_mtx = np.load('data_local/imagenet2vec/imagenet2vec_1k.npy')
         directory = data_directory(part=part)
-        wnids, indices, categories = load_classes(num_classes=1000, df='canidae')
+        wnids, indices, categories = load_classes(num_classes=1000, df='reptile')
 
 
         percent_of151 = []
