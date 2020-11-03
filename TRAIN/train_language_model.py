@@ -1,6 +1,6 @@
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '1'
+os.environ["CUDA_VISIBLE_DEVICES"]= '2'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
@@ -62,8 +62,8 @@ def specific_callbacks(run_name):
 
 def execute():
     ###################################################
-    lr = 3e-3  # default 3e-5
-    lossWs = [1]
+    lr = 3e-6  # default 3e-5
+    lossWs = [10]
     for lossW in lossWs:
         version = '30-10-20'
         discrete_frozen = False

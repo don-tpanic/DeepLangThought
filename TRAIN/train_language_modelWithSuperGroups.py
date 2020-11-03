@@ -5,7 +5,7 @@ when training the discrete term.
 """
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '0'
+os.environ["CUDA_VISIBLE_DEVICES"]= '1'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
@@ -68,7 +68,7 @@ def specific_callbacks(run_name):
 
 def execute():
     ###################################################
-    lr = 3e-3
+    lr = 3e-4
     #lossWs = [0.1, 1, 2, 3, 5, 7, 10]
     lossWs = [1]
     for lossW in lossWs:

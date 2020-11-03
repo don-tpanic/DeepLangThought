@@ -1,6 +1,6 @@
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '0'
+os.environ["CUDA_VISIBLE_DEVICES"]= '1'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
@@ -393,8 +393,8 @@ def execute(compute_semantic_activation=False,
             ):
     ######################
     part = 'val_white'
-    lr = 3e-5
-    version = '27-7-20'
+    lr = 3e-4
+    version = '30-10-20'
     w2_depth = 2
     intersect_layer = 'semantic'
     fname1 = 'bert'
