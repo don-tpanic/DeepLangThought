@@ -387,13 +387,13 @@ def dog2dog_vs_dog2cat(lossWs, version, df_1, df_2, num_classes=1000):
 def execute(compute_semantic_activation=False,
             compute_distance_matrices=False,
             compute_RSA=False,
-            finer_compare=False,
-            dogVSrest=True,
+            finer_compare=True,
+            dogVSrest=False,
             dogVScat=False,
             ):
     ######################
     part = 'val_white'
-    lr = 3e-4
+    lr = 3e-6
     version = '30-10-20'
     w2_depth = 2
     intersect_layer = 'semantic'
@@ -403,9 +403,9 @@ def execute(compute_semantic_activation=False,
     #discrete_frozen = False
 
     #lossWs = [0.1, 1, 2, 3, 5, 7, 10]
-    lossWs = [1]
+    lossWs = [10]
     for lossW in lossWs:
-        lossW = f'{lossW}-sup={df}'
+        #lossW = f'{lossW}-sup={df}'
         run_name = f'{version}-lr={str(lr)}-lossW={lossW}'
 
         if compute_semantic_activation:
@@ -430,7 +430,7 @@ def execute(compute_semantic_activation=False,
         for lossW in lossWs:
             fname2s.append(f'version={version}-lossW={lossW}')
         for fname2 in fname2s:
-            RSA(fname1, fname2, mtx_type='distance', part=part)
+            RSA(fname1, fname2, mtx_type='embedding', part=part)
     
     if finer_compare:
         finer_distance_compare(lossWs, version, part)
