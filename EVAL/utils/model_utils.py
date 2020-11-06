@@ -24,6 +24,9 @@ def ready_model_for_ind_accuracy_eval(w2_depth, run_name, lossW):
     semantic output, we have to use the word2vec matrix trick from
     Nick. The result of that is we cannot evaluate individual classes
     but all 1000 classes at once, which isn't what we want.
+
+    Also, this script applies to both regular training and superordinate
+    training models.
     """
     # model structure at training
     model = lang_model(w2_depth=w2_depth)
