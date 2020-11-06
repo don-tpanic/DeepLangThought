@@ -102,10 +102,14 @@ def eval_models_w_superordinates(part, lossWs, version, lr, w2_depth, supGroup):
                                 shuffle=True,
                                 subset=None,
                                 validation_split=0,
-                                class_mode='categorical',
+                                class_mode='sparse',
                                 target_size=(224, 224),
                                 preprocessing_function=preprocess_input,
                                 horizontal_flip=False)
+            
+            # TODO: check, this is supposed to swap labels to all `151` if supGroup=canidae
+            if index in supIndices:
+                gen.classes = [supIndices[0]] * len(gen.classes)
 
             loss, top1acc, top5acc = model.evaluate_generator(gen, steps, verbose=1, workers=3)
             per_lossW_acc[i, :] = [top1acc, top5acc]
@@ -157,6 +161,14 @@ def plot_regular_models_acc(part, lossWs, version, lr, top_n=1):
 
 
 def plot_superordinate_models_acc():
+    """
+    within and outside superordinate class 
+    performance should be plotted separately.
+
+    # TODO: one question is whether for regular models, the corresponding 
+    # superoridate performance should also be separately plotted and compared.
+    # For now, no.
+    """
     pass
 
 
