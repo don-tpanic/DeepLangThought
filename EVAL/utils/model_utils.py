@@ -3,6 +3,7 @@ import pickle
 
 import tensorflow as tf
 from tensorflow.keras.models import Model
+from tensorflow.keras.utils import plot_model
 from tensorflow.keras.applications.vgg16 import VGG16
 
 from keras_custom.models.language_model import lang_model
@@ -10,8 +11,54 @@ from keras_custom.models.language_model import lang_model
 """
 Some pre-defined models that are used repeatedly.
 """
+def ready_model_for_ind_accuracy_eval(w2_depth, run_name, lossW):
+    """
+    Reconstruct the model for evaluating individual 
+    class accuracies.
 
-def ready_model(w2_depth, run_name, lossW, intersect_layer='semantic'):
+    One important change to the model for evaluating distances
+    is that the semantic output will be removed and the model is 
+    back to be a classification only model.
+
+    Reason we perform this remove step is because, if we keep
+    semantic output, we have to use the word2vec matrix trick from
+    Nick. The result of that is we cannot evaluate individual classes
+    but all 1000 classes at once, which isn't what we want.
+    """
+    # model structure at training
+    model = lang_model(w2_depth=w2_depth)
+
+    # for eval accuracy, the semantic output is not needed.
+    model = Model(inputs=model.input, outputs=model.output[1])
+
+    # load trained weights
+    ## w2 dense weights
+    for i in range(w2_depth):
+        with open(f'_trained_weights/w2_dense_{i}-{run_name}.pkl', 'rb') as f:
+            dense_weights = pickle.load(f)
+            model.get_layer(f'w2_dense_{i}').set_weights([dense_weights[0], dense_weights[1]])
+            print(f'Successfully loading layer weights for [w2_dense_{i}]')
+
+    ## semantic weights
+    with open(f'_trained_weights/semantic_weights-{run_name}.pkl', 'rb') as f:
+        semantic_weights = pickle.load(f)
+        model.get_layer('semantic').set_weights([semantic_weights[0], semantic_weights[1]])
+        print(f'Successfully loading layer weights for [semantic]')
+
+    with open(f'_trained_weights/discrete_weights-{run_name}.pkl', 'rb') as f:
+        discrete_weights = pickle.load(f)
+        model.get_layer('discrete').set_weights([discrete_weights[0], discrete_weights[1]])
+        print(f'Successfully loading layer weights for [discrete]')
+
+    model.compile(tf.keras.optimizers.Adam(lr=3e-5),
+                  loss=['categorical_crossentropy'],
+                  metrics=['acc', 'top_k_categorical_accuracy'])
+
+    print(f'run_name: {run_name}')
+    return model
+
+
+def ready_model(w2_depth, run_name, lossW):
     """
     Load in a specified model and intersect the activation after the 
     semantic layer or return the entire model for evaluation if the intersect
