@@ -1,6 +1,6 @@
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '1'
+os.environ["CUDA_VISIBLE_DEVICES"]= '3'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
@@ -291,14 +291,13 @@ def dog2dog_vs_dog2rest(lossWs, version, df, part):
     E.g. I hope to see when more pressure on discrete loss, the overall dog cluster
          moves away from the rest.
     """
-    ###################
+    #################
     num_classes = 129
-    ###################
+    #################
     wnids, indices, categories = load_classes(num_classes=num_classes, df=df)
-
     bins = 20
     fig, ax = plt.subplots()
-    ratios = [] # ratio btw dog2dog and dog2rest
+    ratios = []    # ratio btw dog2dog and dog2rest
     for i in range(len(lossWs)):
 
         lossW = lossWs[i]
@@ -312,7 +311,6 @@ def dog2dog_vs_dog2rest(lossWs, version, df, part):
         # what we already know about dog vs dog
         mean_dist = np.mean(subMtx_uptri)
         std_dist = np.std(subMtx_uptri)
-
         # ------------------------------------------------------
         # new stuff: dog vs rest
         nonDog_indices = [i for i in range(1000) if i not in indices]
@@ -320,10 +318,11 @@ def dog2dog_vs_dog2rest(lossWs, version, df, part):
         dogVSrest_mtx = distMtx[indices, :][:, nonDog_indices]
         dogVSrest_mean_dist = np.mean(dogVSrest_mtx)
         dogVSrest_std_dist = np.std(dogVSrest_mtx)
+
         ratio = mean_dist / dogVSrest_mean_dist
         ratios.append(ratio)
-        print(f'dog2dog = {mean_dist}(std = {std_dist}), dog2rest = {dogVSrest_mean_dist}(std = {dogVSrest_std_dist}), ratio = {ratio}')
-        exit()
+        print(f'dog2dog = {mean_dist}(std = {std_dist}')
+        print(f'dog2rest = {dogVSrest_mean_dist}(std = {dogVSrest_std_dist}')
 
         if df == 'canidae':
             df = 'dog'
@@ -333,17 +332,20 @@ def dog2dog_vs_dog2rest(lossWs, version, df, part):
         else:
             label1 = None
             label2 = None
-        ax.errorbar(lossW, mean_dist, yerr=std_dist, capsize=3, fmt='o', color='g', label=label1)
-        ax.errorbar(lossW, dogVSrest_mean_dist, yerr=dogVSrest_std_dist, capsize=3, fmt='o', color='r', label=label2)
+        #ax.errorbar(lossW, mean_dist, yerr=std_dist, capsize=3, fmt='o', color='g', label=label1)
+        #ax.errorbar(lossW, dogVSrest_mean_dist, yerr=dogVSrest_std_dist, capsize=3, fmt='o', color='r', label=label2)
 
     #ax.plot(lossWs, ratios)
     ax.set_xlabel('Weight on discrete loss')
     ax.set_ylabel('Relative distance')
-    ax.legend()
+    #ax.legend()
     plt.grid(True)
     ax.set_title(f'{df} vs {df} & {df} vs the rest')
-    plt.savefig(f'RESULTS/{part}/version={version}-Superordinate-{df}.pdf')
+    plt.savefig(f'RESULTS/{part}/version={version}-{df}-interval.pdf')
     print('plotted.')
+
+
+
 
 
 def dog2dog_vs_dog2cat(lossWs, version, df_1, df_2, num_classes=1000):
@@ -387,14 +389,14 @@ def dog2dog_vs_dog2cat(lossWs, version, df_1, df_2, num_classes=1000):
 def execute(compute_semantic_activation=False,
             compute_distance_matrices=False,
             compute_RSA=False,
-            finer_compare=True,
-            dogVSrest=False,
+            finer_compare=False,
+            dogVSrest=True,
             dogVScat=False,
             ):
     ######################
     part = 'val_white'
-    lr = 3e-6
-    version = '30-10-20'
+    lr = 3e-5
+    version = '27-7-20'
     w2_depth = 2
     intersect_layer = 'semantic'
     fname1 = 'bert'
@@ -402,8 +404,7 @@ def execute(compute_semantic_activation=False,
     #lossW = '0.1-sup=canidae'
     #discrete_frozen = False
 
-    #lossWs = [0.1, 1, 2, 3, 5, 7, 10]
-    lossWs = [10]
+    lossWs = [0.1, 1, 2, 3, 5, 7, 10]
     for lossW in lossWs:
         #lossW = f'{lossW}-sup={df}'
         run_name = f'{version}-lr={str(lr)}-lossW={lossW}'

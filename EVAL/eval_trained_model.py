@@ -22,8 +22,8 @@ def execute():
     ###########################
     part = 'val_white'
     lr = 3e-5
-    lossW = 0
-    version = '16-7-20'
+    lossW = [0, 0.1, 1, 2, 3, 5, 7, 10]
+    version = '27-7-20'
     #discrete_frozen = False
     w2_depth = 2
     run_name = f'{version}-lr={str(lr)}-lossW={lossW}'
