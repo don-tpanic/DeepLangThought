@@ -9,7 +9,7 @@ import tensorflow as tf
 import matplotlib.pyplot as plt
 from tensorflow.keras.applications.vgg16 import preprocess_input
 
-from keras_custom.generators.generator_wrappers import simple_generator
+from keras_custom.generators.generator_wrappers import simple_generator, sup_gen
 from EVAL.utils.data_utils import data_directory, load_classes
 from EVAL.utils.model_utils import ready_model_for_ind_accuracy_eval
 
@@ -51,7 +51,7 @@ def eval_regular_training_models(part, lossWs, version, lr, w2_depth):
                                 shuffle=True,
                                 subset=None,
                                 validation_split=0,
-                                class_mode='categorical',
+                                class_mode='sparse',  # need sparse to ensure label corrector has effect.
                                 target_size=(224, 224),
                                 preprocessing_function=preprocess_input,
                                 horizontal_flip=False)
@@ -63,9 +63,55 @@ def eval_regular_training_models(part, lossWs, version, lr, w2_depth):
         print('per_lossW_acc saved.')
 
     
-def eval_models_w_superordinates(part, lossWs, version, lr, w2_depth):
-    # TODO
-    pass
+def eval_models_w_superordinates(part, lossWs, version, lr, w2_depth, supGroup):
+    """
+    Use trained model to evaluate top1/5 accuracy at each lossW
+
+    inputs:
+    -------
+        supGroup: either one of the superordinates.
+    """
+    RES_PATH = f'RESULTS/{part}/accuracy'
+    for lossW in lossWs:
+        run_name = f'{version}-lr={str(lr)}-lossW={lossW}-sup={supGroup}'
+        per_lossW_path = os.path.join(RES_PATH, run_name)
+        per_lossW_acc = np.zeros((1000, 2))
+        if not os.path.exists(per_lossW_path):
+            os.mkdir(per_lossW_path)
+
+        # model
+        model = ready_model_for_ind_accuracy_eval(
+                            w2_depth=w2_depth, 
+                            run_name=run_name, 
+                            lossW=lossW)
+        
+        exit()  # TODO: remove when weights back and ready to collect acc for all.
+
+        # test data
+        directory = data_directory(part=part)
+        wnids, indices, _ = load_classes(num_classes=1000, df='ranked')
+        _, supIndices, _ = load_classes(num_classes=1000, df=supGroup)
+        for i in range(len(wnids)):
+            index = indices[i]
+            wnid = wnids[i]
+            gen, steps = simple_generator(    # TODO. the true labels need to be swapped such that 151 for all dogs.
+                                directory=directory,
+                                classes=[wnid],
+                                batch_size=16,
+                                seed=42,
+                                shuffle=True,
+                                subset=None,
+                                validation_split=0,
+                                class_mode='categorical',
+                                target_size=(224, 224),
+                                preprocessing_function=preprocess_input,
+                                horizontal_flip=False)
+
+            loss, top1acc, top5acc = model.evaluate_generator(gen, steps, verbose=1, workers=3)
+            per_lossW_acc[i, :] = [top1acc, top5acc]
+        
+        np.save(per_lossW_path, per_lossW_acc)
+        print('per_lossW_acc saved.')
 
 
 def plot_regular_models_acc(part, lossWs, version, lr, top_n=1):
