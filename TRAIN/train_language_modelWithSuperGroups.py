@@ -68,11 +68,10 @@ def specific_callbacks(run_name):
 
 def execute():
     ###################################################
-    lr = 3e-4
-    #lossWs = [0.1, 1, 2, 3, 5, 7, 10]
-    lossWs = [1]
+    lr = 3e-5
+    lossWs = [0.1, 1, 2, 3, 5, 7, 10]
     for lossW in lossWs:
-        version = '30-10-20'
+        version = '11-11-20'
         discrete_frozen = False
         w2_depth = 2
         supGroup = 'reptile'  # all dogs collapse into one class.
