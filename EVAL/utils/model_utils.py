@@ -54,7 +54,7 @@ def ready_model_for_ind_accuracy_eval(w2_depth, run_name, lossW):
         print(f'Successfully loading layer weights for [discrete]')
 
     model.compile(tf.keras.optimizers.Adam(lr=3e-5),
-                  loss=['categorical_crossentropy'],
+                  loss=['sparse_categorical_crossentropy'],
                   metrics=['acc', 'top_k_categorical_accuracy'])
 
     print(f'run_name: {run_name}')
