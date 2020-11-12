@@ -100,15 +100,18 @@ def ready_model(w2_depth, run_name, lossW, intersect_layer):
             discrete_weights = pickle.load(f)
             model.get_layer('discrete').set_weights([discrete_weights[0], discrete_weights[1]])
             print(f'Successfully loading layer weights for [discrete]')
+
+        model.compile(tf.keras.optimizers.Adam(lr=3e-5),
+                loss=['mse', 'categorical_crossentropy'],
+                loss_weights=[1, lossW],
+                metrics=['acc'])
     else:
         # only when we need to intersect semantic, should we change the `outputs`
         model = Model(inputs=model.input, outputs=model.get_layer(intersect_layer).output)
+        model.compile(tf.keras.optimizers.Adam(lr=3e-5),
+                loss=['mse'],
+                metrics=['acc'])
 
-
-    model.compile(tf.keras.optimizers.Adam(lr=3e-5),
-                  loss=['mse', 'categorical_crossentropy'],
-                  loss_weights=[1, lossW],
-                  metrics=['acc'])
 
     model.summary()
     print(f'run_name: {run_name}')
