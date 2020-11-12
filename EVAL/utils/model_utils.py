@@ -61,7 +61,7 @@ def ready_model_for_ind_accuracy_eval(w2_depth, run_name, lossW):
     return model
 
 
-def ready_model(w2_depth, run_name, lossW):
+def ready_model(w2_depth, run_name, lossW, intersect_layer):
     """
     Load in a specified model and intersect the activation after the 
     semantic layer or return the entire model for evaluation if the intersect
