@@ -3,7 +3,6 @@
 ._.DS_Store
 .npy
 _trained_weights/
-log/
 *.out
 ._*
 *.h5
