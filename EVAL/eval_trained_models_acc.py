@@ -65,7 +65,7 @@ def eval_regular_training_models(part, lossWs, version, lr, w2_depth):
         print('per_lossW_acc saved.')
 
     
-def eval_models_w_superordinates(part, lossWs, version, lr, w2_depth, supGroup):
+def eval_models_w_superordinates(part, lossWs, version, lr, w2_depth, df):
     """
     Use trained model to evaluate top1/5 accuracy at each lossW
 
@@ -75,7 +75,7 @@ def eval_models_w_superordinates(part, lossWs, version, lr, w2_depth, supGroup):
     """
     RES_PATH = f'RESULTS/{part}/accuracy'
     for lossW in lossWs:
-        run_name = f'{version}-lr={str(lr)}-lossW={lossW}-sup={supGroup}'
+        run_name = f'{version}-lr={str(lr)}-lossW={lossW}-sup={df}'
         per_lossW_path = os.path.join(RES_PATH, run_name)
         per_lossW_acc = np.zeros((1000, 2))
         if not os.path.exists(per_lossW_path):
@@ -87,12 +87,10 @@ def eval_models_w_superordinates(part, lossWs, version, lr, w2_depth, supGroup):
                             run_name=run_name, 
                             lossW=lossW)
         
-        exit()  # TODO: remove when weights back and ready to collect acc for all.
-
         # test data
         directory = data_directory(part=part)
         wnids, indices, _ = load_classes(num_classes=1000, df='ranked')
-        _, supIndices, _ = load_classes(num_classes=1000, df=supGroup)
+        _, sup_indices, _ = load_classes(num_classes=1000, df=df)
         for i in range(len(wnids)):
             index = indices[i]
             wnid = wnids[i]
@@ -110,8 +108,8 @@ def eval_models_w_superordinates(part, lossWs, version, lr, w2_depth, supGroup):
                                 horizontal_flip=False)
             
             # TODO: check, this is supposed to swap labels to all `151` if supGroup=canidae
-            if index in supIndices:
-                gen.classes = [supIndices[0]] * len(gen.classes)
+            if index in sup_indices:
+                gen.classes = [sup_indices[0]] * len(gen.classes)
 
             loss, top1acc, top5acc = model.evaluate_generator(gen, steps, verbose=1, workers=3)
             per_lossW_acc[i, :] = [top1acc, top5acc]
@@ -120,7 +118,7 @@ def eval_models_w_superordinates(part, lossWs, version, lr, w2_depth, supGroup):
         print('per_lossW_acc saved.')
 
 
-def print_accuraries(version, div='ind', df='reptile'):
+def print_accuraries(version, lr, div='ind', df='reptile'):
     """
     print accuracies based on type,
     if div=='int', we print based on individual classes (regular training),
@@ -134,12 +132,13 @@ def print_accuraries(version, div='ind', df='reptile'):
     ACC_PATH = 'RESULTS/val_white/accuracy'
     lossWs = [0, 0.1, 1, 2, 3, 5, 7, 10]
     _, ind_indices, _ = load_classes(num_classes=1000, df='ranked')
-    _, sup_indices, _ = load_classes(num_classes=1000, df=df)
-    nonSup_indices = [i for i in ind_indices if i not in sup_indices]
-    print('len(sup_indices) = ', len(sup_indices))
-    print('len(nonSup_indices) = ', len(nonSup_indices))
 
     if div == 'sup':
+        _, sup_indices, _ = load_classes(num_classes=1000, df=df)
+        nonSup_indices = [i for i in ind_indices if i not in sup_indices]
+        print('len(sup_indices) = ', len(sup_indices))
+        print('len(nonSup_indices) = ', len(nonSup_indices))
+
         # baseline acc
         base_acc = np.load(os.path.join(ACC_PATH, 'baseline.npy'))
         base_acc_sup = base_acc[sup_indices]
@@ -150,11 +149,23 @@ def print_accuraries(version, div='ind', df='reptile'):
         for lossW in lossWs:
             # other acc
             print(f'*** lossW=[{lossW}] ***')
-            acc = np.load(os.path.join(ACC_PATH, f'{version}-lossW={lossW}.npy'))
+            acc = np.load(os.path.join(ACC_PATH, f'{version}-{str(lr)}-lossW={lossW}.npy'))
             acc_sup = acc[sup_indices]
             acc_non = acc[nonSup_indices]
             print(f'average sup acc = [{np.mean(acc_sup[:, 0])}], std=[{np.std(acc_sup[:, 0])}]')
             print(f'average non acc = [{np.mean(acc_non[:, 0])}], std=[{np.std(acc_non[:, 0])}]')
+    
+    elif div == 'ind':
+        # baseline acc
+        base_acc = np.load(os.path.join(ACC_PATH, 'baseline.npy'))
+        print(f'average base acc = [{np.mean(base_acc[:, 0])}], std=[{np.std(base_acc[:, 0])}]')
+
+        for lossW in lossWs:
+            # other acc
+            print(f'*** lossW=[{lossW}] ***')
+            acc = np.load(os.path.join(ACC_PATH, f'{version}-{str(lr)}-lossW={lossW}.npy'))
+            print(f'average acc = [{np.mean(acc[:, 0])}], std=[{np.std(acc[:, 0])}]')
+
 
 
 
@@ -218,17 +229,19 @@ def execute():
     ###########################
     part = 'val_white'
     lr = 3e-5
-    lossWs = [1,2]
+    lossWs = [0, 0.1, 1, 2, 3, 5, 7, 10]
     version = '11-11-20'
     w2_depth = 2
     ###########################
 
     # regular models:
-    eval_regular_training_models(part, lossWs, version, lr, w2_depth)
+    #eval_regular_training_models(part, lossWs, version, lr, w2_depth)
     #plot_regular_models_acc(part, lossWs, version, lr, top_n=1)
 
     # with superordinates:
     # eval_models_w_superordinates(part, lossWs, version, lr, w2_depth)
+
+    print_accuraries(version, lr, div='ind', df=None)
 
 
 
