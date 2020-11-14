@@ -1,6 +1,6 @@
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '3'
+os.environ["CUDA_VISIBLE_DEVICES"]= '0'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
@@ -25,6 +25,7 @@ def eval_regular_training_models(part, lossWs, version, lr, w2_depth):
     for lossW in lossWs:
         run_name = f'{version}-lr={str(lr)}-lossW={lossW}'
         per_lossW_path = os.path.join(RES_PATH, run_name)
+        print('per_lossW_path= ', per_lossW_path)
         per_lossW_acc = np.zeros((1000, 2))
         if not os.path.exists(per_lossW_path):
             os.mkdir(per_lossW_path)
@@ -35,14 +36,13 @@ def eval_regular_training_models(part, lossWs, version, lr, w2_depth):
                             run_name=run_name, 
                             lossW=lossW)
         
-        exit()  # TODO: remove when weights back and ready to collect acc for all.
-
         # test data
         directory = data_directory(part=part)
         wnids, indices, _ = load_classes(num_classes=1000, df='ranked')
         for i in range(len(wnids)):
             index = indices[i]
             wnid = wnids[i]
+            print(f'*** currently eval index=[{index}] ***')
             gen, steps = simple_generator(
                                 directory=directory,
                                 classes=[wnid],
@@ -57,6 +57,8 @@ def eval_regular_training_models(part, lossWs, version, lr, w2_depth):
                                 horizontal_flip=False)
 
             loss, top1acc, top5acc = model.evaluate_generator(gen, steps, verbose=1, workers=3)
+
+            # BUG: top5 all 0.
             per_lossW_acc[i, :] = [top1acc, top5acc]
         
         np.save(per_lossW_path, per_lossW_acc)
@@ -118,6 +120,46 @@ def eval_models_w_superordinates(part, lossWs, version, lr, w2_depth, supGroup):
         print('per_lossW_acc saved.')
 
 
+def print_accuraries(version, div='ind', df='reptile'):
+    """
+    print accuracies based on type,
+    if div=='int', we print based on individual classes (regular training),
+    if div=='sup', we print sup and non-sup for both regular and sup models:
+
+    inputs:
+    -------
+        div: 'ind' or 'sup' (div: division of results)
+        df: ranked or any other sup
+    """
+    ACC_PATH = 'RESULTS/val_white/accuracy'
+    lossWs = [0, 0.1, 1, 2, 3, 5, 7, 10]
+    _, ind_indices, _ = load_classes(num_classes=1000, df='ranked')
+    _, sup_indices, _ = load_classes(num_classes=1000, df=df)
+    nonSup_indices = [i for i in ind_indices if i not in sup_indices]
+    print('len(sup_indices) = ', len(sup_indices))
+    print('len(nonSup_indices) = ', len(nonSup_indices))
+
+    if div == 'sup':
+        # baseline acc
+        base_acc = np.load(os.path.join(ACC_PATH, 'baseline.npy'))
+        base_acc_sup = base_acc[sup_indices]
+        base_acc_non = base_acc[nonSup_indices]
+        print(f'average sup base acc = [{np.mean(base_acc_sup[:, 0])}], std=[{np.std(base_acc_sup[:, 0])}]')
+        print(f'average non base acc = [{np.mean(base_acc_non[:, 0])}], std=[{np.std(base_acc_non[:, 0])}]')
+
+        for lossW in lossWs:
+            # other acc
+            print(f'*** lossW=[{lossW}] ***')
+            acc = np.load(os.path.join(ACC_PATH, f'{version}-lossW={lossW}.npy'))
+            acc_sup = acc[sup_indices]
+            acc_non = acc[nonSup_indices]
+            print(f'average sup acc = [{np.mean(acc_sup[:, 0])}], std=[{np.std(acc_sup[:, 0])}]')
+            print(f'average non acc = [{np.mean(acc_non[:, 0])}], std=[{np.std(acc_non[:, 0])}]')
+
+
+
+
+
 def plot_regular_models_acc(part, lossWs, version, lr, top_n=1):
     """
     Plot top1/top5 individual class accuracy
@@ -176,14 +218,14 @@ def execute():
     ###########################
     part = 'val_white'
     lr = 3e-5
-    lossWs = [0, 0.1, 1, 2, 3, 5, 7, 10]
-    version = '27-7-20'
+    lossWs = [1,2]
+    version = '11-11-20'
     w2_depth = 2
     ###########################
 
     # regular models:
     eval_regular_training_models(part, lossWs, version, lr, w2_depth)
-    plot_regular_models_acc(part, lossWs, version, lr, top_n=1)
+    #plot_regular_models_acc(part, lossWs, version, lr, top_n=1)
 
     # with superordinates:
     # eval_models_w_superordinates(part, lossWs, version, lr, w2_depth)
