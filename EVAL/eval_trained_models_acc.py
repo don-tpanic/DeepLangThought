@@ -1,6 +1,6 @@
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '0'
+os.environ["CUDA_VISIBLE_DEVICES"]= '3'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
@@ -130,9 +130,10 @@ def print_accuraries(version, lr, div='ind', df='reptile'):
         df: ranked or any other sup
     """
     ACC_PATH = 'RESULTS/val_white/accuracy'
-    lossWs = [0, 0.1, 1, 2, 3, 5, 7, 10]
+    lossWs = [0.1, 1, 2, 3, 5, 7, 10]
     _, ind_indices, _ = load_classes(num_classes=1000, df='ranked')
 
+    # report two sets of acc based on sup and non-sup
     if div == 'sup':
         _, sup_indices, _ = load_classes(num_classes=1000, df=df)
         nonSup_indices = [i for i in ind_indices if i not in sup_indices]
@@ -149,26 +150,22 @@ def print_accuraries(version, lr, div='ind', df='reptile'):
         for lossW in lossWs:
             # other acc
             print(f'*** lossW=[{lossW}] ***')
-            acc = np.load(os.path.join(ACC_PATH, f'{version}-{str(lr)}-lossW={lossW}.npy'))
+            acc = np.load(os.path.join(ACC_PATH, f'{version}-lr={str(lr)}-lossW={lossW}-sup={df}.npy'))
             acc_sup = acc[sup_indices]
             acc_non = acc[nonSup_indices]
             print(f'average sup acc = [{np.mean(acc_sup[:, 0])}], std=[{np.std(acc_sup[:, 0])}]')
             print(f'average non acc = [{np.mean(acc_non[:, 0])}], std=[{np.std(acc_non[:, 0])}]')
     
+    # report ind class acc
     elif div == 'ind':
-        # baseline acc
         base_acc = np.load(os.path.join(ACC_PATH, 'baseline.npy'))
         print(f'average base acc = [{np.mean(base_acc[:, 0])}], std=[{np.std(base_acc[:, 0])}]')
 
         for lossW in lossWs:
             # other acc
             print(f'*** lossW=[{lossW}] ***')
-            acc = np.load(os.path.join(ACC_PATH, f'{version}-{str(lr)}-lossW={lossW}.npy'))
+            acc = np.load(os.path.join(ACC_PATH, f'{version}-lr={str(lr)}-lossW={lossW}.npy'))
             print(f'average acc = [{np.mean(acc[:, 0])}], std=[{np.std(acc[:, 0])}]')
-
-
-
-
 
 
 def plot_regular_models_acc(part, lossWs, version, lr, top_n=1):
@@ -229,9 +226,10 @@ def execute():
     ###########################
     part = 'val_white'
     lr = 3e-5
-    lossWs = [0, 0.1, 1, 2, 3, 5, 7, 10]
+    lossWs = [0.1, 1, 2, 3, 5, 7, 10]
     version = '11-11-20'
     w2_depth = 2
+    df = 'reptile'
     ###########################
 
     # regular models:
@@ -239,9 +237,9 @@ def execute():
     #plot_regular_models_acc(part, lossWs, version, lr, top_n=1)
 
     # with superordinates:
-    # eval_models_w_superordinates(part, lossWs, version, lr, w2_depth)
+    #eval_models_w_superordinates(part, lossWs, version, lr, w2_depth, df=df)
 
-    print_accuraries(version, lr, div='ind', df=None)
+    print_accuraries(version, lr, div='sup', df=df)
 
 
 
