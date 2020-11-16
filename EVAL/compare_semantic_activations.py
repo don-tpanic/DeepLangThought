@@ -48,32 +48,35 @@ def grab_activations(model, part, version, lossW):
         wnid = wnids[i]
         category = categories[i]
 
-        gen, steps = simple_generator(
-                        directory=directory,
-                        classes=[wnid],
-                        batch_size=128,
-                        seed=42,
-                        shuffle=True,
-                        subset=None,
-                        validation_split=0,
-                        class_mode='sparse',  # only used for lang due to BERT indexing
-                        target_size=(224, 224),
-                        preprocessing_function=preprocess_input,
-                        horizontal_flip=False)
-
-
-        # (N, 768)
-        proba = model.predict(gen, steps, verbose=1, workers=3)
-
-        # (768,)
-        avg_vec = np.mean(proba, axis=0)
-        assert avg_vec.shape == (768,)
-
-        # save avg vec
+        # check if some classes have been computed so can skip
         save_path = f'RESRC_{part}/_computed_activations/{version}/lossW={lossW}'
         if not os.path.exists(save_path):
             os.makedirs(save_path)
-        np.save(os.path.join(save_path, f'{category}.npy'), avg_vec)
+        
+        file2save = os.path.join(save_path, f'{category}.npy')
+        if not os.path.exists(file2save):
+            gen, steps = simple_generator(
+                            directory=directory,
+                            classes=[wnid],
+                            batch_size=128,
+                            seed=42,
+                            shuffle=True,
+                            subset=None,
+                            validation_split=0,
+                            class_mode='sparse',  # only used for lang due to BERT indexing
+                            target_size=(224, 224),
+                            preprocessing_function=preprocess_input,
+                            horizontal_flip=False)
+            # (N, 768)
+            proba = model.predict(gen, steps, verbose=1, workers=3)
+
+            # (768,)
+            avg_vec = np.mean(proba, axis=0)
+            assert avg_vec.shape == (768,)
+
+            # save avg vec
+            np.save(file2save, avg_vec)
+            print(f'CHECK: saved {file2save}.')
 
 
 ### tsne ###
@@ -211,7 +214,7 @@ def RSA(fname1, fname2, mtx_type='distance', part='val_white'):
 
     elif mtx_type == 'embedding':
         print('emb spearman', spearmanr(mtx1.flatten(), mtx2.flatten()))
-        print('emb pearson', pearsonr(mtx1.flatten(), mtx2.flatten()))
+        #print('emb pearson', pearsonr(mtx1.flatten(), mtx2.flatten()))
 
 
 ### ###
@@ -260,7 +263,7 @@ def finer_distance_compare(lossWs, version, part):
     ax.legend()
     if df == 'ranked':
         ax.set_title('Across all 1k classes')
-        #plt.savefig(f'RESULTS/distPlot-version={version}-TEST.pdf')
+        plt.savefig(f'RESULTS/{part}/{version}-indDistance-{part}.pdf')
         print('plotted.')
     else:
         # # TODO: temp adding lossW=1-semantic=0
@@ -275,7 +278,7 @@ def finer_distance_compare(lossWs, version, part):
         # print(f'lossW=1, sum={sum_dist}, mean={mean_dist}, std={std_dist}')
 
         ax.set_title(f'Across subset of {df} classes')
-        plt.savefig(f'RESULTS/distPlot-version={version}-sup={df}-TEST.pdf')
+        #plt.savefig(f'RESULTS/{version}-indDistance-{part}.pdf')
         print('plotted.')
     
 
@@ -389,14 +392,14 @@ def dog2dog_vs_dog2cat(lossWs, version, df_1, df_2, num_classes=1000):
 def execute(compute_semantic_activation=False,
             compute_distance_matrices=False,
             compute_RSA=False,
-            finer_compare=False,
-            dogVSrest=True,
+            finer_compare=True,
+            dogVSrest=False,
             dogVScat=False,
             ):
     ######################
     part = 'val_white'
     lr = 3e-5
-    version = '27-7-20'
+    version = '11-11-20'
     w2_depth = 2
     intersect_layer = 'semantic'
     fname1 = 'bert'
@@ -431,7 +434,7 @@ def execute(compute_semantic_activation=False,
         for lossW in lossWs:
             fname2s.append(f'version={version}-lossW={lossW}')
         for fname2 in fname2s:
-            RSA(fname1, fname2, mtx_type='embedding', part=part)
+            RSA(fname1, fname2, mtx_type='distance', part=part)
     
     if finer_compare:
         finer_distance_compare(lossWs, version, part)
