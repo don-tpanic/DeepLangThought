@@ -23,10 +23,17 @@ from TRAIN.utils.data_utils import load_classes, data_directory
 Source module for training language model
 """
 
-def train_n_val_data_gen(subset):
+def train_n_val_data_gen(subset, bert_random):
     # data generators
     directory = data_directory(part='train')  # default is train, use val only for debug
-    wordvec_mtx = np.load('data_local/imagenet2vec/imagenet2vec_1k.npy')
+    
+    if not bert_random:
+        wordvec_mtx = np.load('data_local/imagenet2vec/imagenet2vec_1k.npy')
+        print('Using regular BERT...\n')
+    else:
+        wordvec_mtx = np.load('data_local/imagenet2vec/imagenet2vec_1k_random98.npy')
+        print('Using random BERT 98...\n')
+        
     gen, steps = lang_gen(
                         directory=directory,
                         classes=None,
@@ -64,8 +71,11 @@ def execute():
     ###################################################
     lr = 3e-5  # default 3e-5
     lossWs = [3, 5, 7, 10]
+    bert_random = True
     for lossW in lossWs:
         version = '11-11-20'
+        if bert_random is True:
+            version = f'{version}-random'
         discrete_frozen = False
         w2_depth = 2
         run_name = f'{version}-lr={str(lr)}-lossW={lossW}'
@@ -88,8 +98,8 @@ def execute():
             print('loaded trained discrete weights')
         
         # data
-        train_gen, train_steps = train_n_val_data_gen(subset='training')
-        val_gen, val_steps = train_n_val_data_gen(subset='validation')
+        train_gen, train_steps = train_n_val_data_gen(subset='training', bert_random=bert_random)
+        val_gen, val_steps = train_n_val_data_gen(subset='validation', bert_random=bert_random)
 
         # callbacks and fitting
         earlystopping, tensorboard = specific_callbacks(run_name=run_name)
