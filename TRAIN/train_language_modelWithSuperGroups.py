@@ -5,7 +5,7 @@ when training the discrete term.
 """
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '0'
+os.environ["CUDA_VISIBLE_DEVICES"]= '1'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
@@ -28,10 +28,22 @@ from TRAIN.utils.data_utils import load_classes, data_directory
 Source module for training language model
 """
 
-def train_n_val_data_gen(subset):
+def train_n_val_data_gen(sup, subset, bert_random=False):
+    """
+    inputs:
+    ------
+        sup: which superordinate to train/eval
+        subset: `training` split or `validation` split
+    """
     # data generators
     directory = data_directory(part='train')  # default is train, use val only for debug
-    wordvec_mtx = np.load('data_local/imagenet2vec/imagenet2vec_1k.npy')
+
+    if not bert_random:
+        wordvec_mtx = np.load('data_local/imagenet2vec/imagenet2vec_1k.npy')
+        print('Using regular BERT...\n')
+    else:
+        wordvec_mtx = np.load('data_local/imagenet2vec/imagenet2vec_1k_random98.npy')
+        print('Using random BERT 98...\n')
 
     gen, steps = sup_gen(
                         directory=directory,
@@ -45,7 +57,8 @@ def train_n_val_data_gen(subset):
                         target_size=(224, 224),
                         preprocessing_function=preprocess_input,
                         horizontal_flip=True, 
-                        wordvec_mtx=wordvec_mtx)
+                        wordvec_mtx=wordvec_mtx,
+                        sup=sup)
     return gen, steps
 
 
@@ -69,13 +82,17 @@ def specific_callbacks(run_name):
 def execute():
     ###################################################
     lr = 3e-5
-    lossWs = [0.001, 0.01]
+    lossWs = [0.1, 1, 2, 3, 5, 7, 10]
+    bert_random = True
     for lossW in lossWs:
         version = '11-11-20'
+        if bert_random is True:
+            version = f'{version}-random'
         discrete_frozen = False
         w2_depth = 2
         supGroup = 'reptile'  # all dogs collapse into one class.
         run_name = f'{version}-lr={str(lr)}-lossW={lossW}-sup={supGroup}'
+        print('run_name = ', run_name)
         ###################################################
         # model
         model = lang_model(w2_depth=w2_depth, discrete_frozen=discrete_frozen)
@@ -93,8 +110,8 @@ def execute():
         #     print('loaded trained discrete weights')
         
         # data
-        train_gen, train_steps = train_n_val_data_gen(subset='training')
-        val_gen, val_steps = train_n_val_data_gen(subset='validation')
+        train_gen, train_steps = train_n_val_data_gen(sup=supGroup, subset='training', bert_random=bert_random)
+        val_gen, val_steps = train_n_val_data_gen(sup=supGroup, subset='validation', bert_random=bert_random)
 
         # callbacks and fitting
         earlystopping, tensorboard = specific_callbacks(run_name=run_name)

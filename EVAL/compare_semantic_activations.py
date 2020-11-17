@@ -389,10 +389,10 @@ def dog2dog_vs_dog2cat(lossWs, version, df_1, df_2, num_classes=1000):
     print('This eval is currently problematic due to unclear comparison....Think more...')
 
 
-def execute(compute_semantic_activation=False,
-            compute_distance_matrices=False,
+def execute(compute_semantic_activation=True,
+            compute_distance_matrices=True,
             compute_RSA=False,
-            finer_compare=True,
+            finer_compare=False,
             dogVSrest=False,
             dogVScat=False,
             ):
@@ -403,13 +403,13 @@ def execute(compute_semantic_activation=False,
     w2_depth = 2
     intersect_layer = 'semantic'
     fname1 = 'bert'
-    df = 'reptile'
+    df = 'fish'
     #lossW = '0.1-sup=canidae'
     #discrete_frozen = False
 
     lossWs = [0.1, 1, 2, 3, 5, 7, 10]
     for lossW in lossWs:
-        #lossW = f'{lossW}-sup={df}'
+        lossW = f'{lossW}-sup={df}'
         run_name = f'{version}-lr={str(lr)}-lossW={lossW}'
 
         if compute_semantic_activation:
