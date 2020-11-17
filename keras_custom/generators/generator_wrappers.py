@@ -144,6 +144,7 @@ def sup_gen(directory,
                 preprocessing_function,
                 horizontal_flip,
                 wordvec_mtx,
+                sup
                 ):
     """
     Nothing special about this generator,
@@ -168,7 +169,8 @@ def sup_gen(directory,
                         target_size=target_size,
                         preprocessing_function=preprocessing_function,
                         horizontal_flip=horizontal_flip,
-                        wordvec_mtx=wordvec_mtx   ###
+                        wordvec_mtx=wordvec_mtx,
+                        sup=sup
                         )
 
     steps = bad_generator.compute_step_size()

@@ -197,6 +197,7 @@ class SafeDirectoryIterator(SafeIterator):
                  interpolation_order=1,
                  # load in wordvec mtx
                  wordvec_mtx=None,
+                 sup='ranked',
                  ):
 
         if color_mode not in {'rgb', 'rgba', 'grayscale'}:
@@ -270,6 +271,7 @@ class SafeDirectoryIterator(SafeIterator):
         self.preprocessing_function = preprocessing_function
         self.dtype = dtype
         self.wordvec_mtx = wordvec_mtx
+        self.sup = sup
 
         # --------------------------------------------------------
         if dtype is None:
@@ -378,7 +380,7 @@ class SafeDirectoryIterator(SafeIterator):
         # and then we will have to keep track of both the native class labels 
         # and the hacked superGroup labels.
         self.class_indices_sup = copy.deepcopy(self.class_indices)
-        sup_wnids, sup_indices, sup_descriptions = load_classes(num_classes=999, df='fish')  # TODO: extra attr df
+        sup_wnids, sup_indices, sup_descriptions = load_classes(num_classes=999, df=sup)  # TODO: extra attr df
         
         for wnid in self.class_indices:
             # TODO: here which label we set to depends on
@@ -390,6 +392,7 @@ class SafeDirectoryIterator(SafeIterator):
                 self.class_indices_sup[wnid] = sup_indices[0]
         #print(self.class_indices)
         #print(self.class_indices_sup)
+        #exit()
         #######################################################################################
 
         pool = multiprocessing.pool.ThreadPool()
