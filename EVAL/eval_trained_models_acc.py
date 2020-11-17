@@ -1,6 +1,6 @@
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '3'
+os.environ["CUDA_VISIBLE_DEVICES"]= '1'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
@@ -118,7 +118,7 @@ def eval_models_w_superordinates(part, lossWs, version, lr, w2_depth, df):
         print('per_lossW_acc saved.')
 
 
-def print_accuraries(version, lr, div='ind', df='reptile'):
+def print_accuraries(version, lr, lossWs, div='ind', df='reptile'):
     """
     print accuracies based on type,
     if div=='int', we print based on individual classes (regular training),
@@ -130,7 +130,6 @@ def print_accuraries(version, lr, div='ind', df='reptile'):
         df: ranked or any other sup
     """
     ACC_PATH = 'RESULTS/val_white/accuracy'
-    lossWs = [0.1, 1, 2, 3, 5, 7, 10]
     _, ind_indices, _ = load_classes(num_classes=1000, df='ranked')
 
     # report two sets of acc based on sup and non-sup
@@ -229,7 +228,7 @@ def execute():
     lossWs = [0.1, 1, 2, 3, 5, 7, 10]
     version = '11-11-20'
     w2_depth = 2
-    df = 'reptile'
+    df = 'fish'
     ###########################
 
     # regular models:
@@ -239,7 +238,7 @@ def execute():
     # with superordinates:
     #eval_models_w_superordinates(part, lossWs, version, lr, w2_depth, df=df)
 
-    print_accuraries(version, lr, div='sup', df=df)
+    print_accuraries(version, lr, lossWs, div='sup', df=df)
 
 
 

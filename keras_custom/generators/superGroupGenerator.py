@@ -378,7 +378,7 @@ class SafeDirectoryIterator(SafeIterator):
         # and then we will have to keep track of both the native class labels 
         # and the hacked superGroup labels.
         self.class_indices_sup = copy.deepcopy(self.class_indices)
-        sup_wnids, sup_indices, sup_descriptions = load_classes(num_classes=999, df='reptile')  # TODO: extra attr df
+        sup_wnids, sup_indices, sup_descriptions = load_classes(num_classes=999, df='fish')  # TODO: extra attr df
         
         for wnid in self.class_indices:
             # TODO: here which label we set to depends on

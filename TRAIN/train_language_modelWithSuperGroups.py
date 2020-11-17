@@ -69,12 +69,12 @@ def specific_callbacks(run_name):
 def execute():
     ###################################################
     lr = 3e-5
-    lossWs = [0.001, 0.01]
+    lossWs = [0.1, 1, 2, 3, 5, 7, 10]
     for lossW in lossWs:
         version = '11-11-20'
         discrete_frozen = False
         w2_depth = 2
-        supGroup = 'reptile'  # all dogs collapse into one class.
+        supGroup = 'fish'  # all dogs collapse into one class.
         run_name = f'{version}-lr={str(lr)}-lossW={lossW}-sup={supGroup}'
         ###################################################
         # model
