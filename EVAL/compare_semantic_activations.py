@@ -1,6 +1,6 @@
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '3'
+os.environ["CUDA_VISIBLE_DEVICES"]= '0'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
@@ -389,9 +389,9 @@ def dog2dog_vs_dog2cat(lossWs, version, df_1, df_2, num_classes=1000):
     print('This eval is currently problematic due to unclear comparison....Think more...')
 
 
-def execute(compute_semantic_activation=True,
-            compute_distance_matrices=True,
-            compute_RSA=False,
+def execute(compute_semantic_activation=False,
+            compute_distance_matrices=False,
+            compute_RSA=True,
             finer_compare=False,
             dogVSrest=False,
             dogVScat=False,
@@ -399,15 +399,13 @@ def execute(compute_semantic_activation=True,
     ######################
     part = 'val_white'
     lr = 3e-5
-    version = '11-11-20'
+    version = '11-11-20-random'
     w2_depth = 2
     intersect_layer = 'semantic'
     fname1 = 'bert'
-    df = 'fish'
-    #lossW = '0.1-sup=canidae'
-    #discrete_frozen = False
+    df = 'reptile'
 
-    lossWs = [0.1, 1, 2, 3, 5, 7, 10]
+    lossWs = [0.1, 1, 2, 3, 5]
     for lossW in lossWs:
         lossW = f'{lossW}-sup={df}'
         run_name = f'{version}-lr={str(lr)}-lossW={lossW}'
