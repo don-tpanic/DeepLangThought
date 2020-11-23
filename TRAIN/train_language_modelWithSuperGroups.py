@@ -5,7 +5,7 @@ when training the discrete term.
 """
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '1'
+os.environ["CUDA_VISIBLE_DEVICES"]= '0'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
@@ -82,15 +82,15 @@ def specific_callbacks(run_name):
 def execute():
     ###################################################
     lr = 3e-5
-    lossWs = [0.1, 1, 2, 3, 5, 7, 10]
-    bert_random = True
+    lossWs = [0.1, 1, 2]
+    bert_random = False
     for lossW in lossWs:
         version = '11-11-20'
         if bert_random is True:
             version = f'{version}-random'
         discrete_frozen = False
         w2_depth = 2
-        supGroup = 'reptile'  # all dogs collapse into one class.
+        supGroup = 'bird'  # all dogs collapse into one class.
         run_name = f'{version}-lr={str(lr)}-lossW={lossW}-sup={supGroup}'
         print('run_name = ', run_name)
         ###################################################

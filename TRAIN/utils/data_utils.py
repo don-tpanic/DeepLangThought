@@ -28,10 +28,14 @@ def data_directory(part='train'):
     part: partition - either train or val or val_white
     """
     hostname = socket.gethostname()
-    server_num = int(hostname[4:6])
-    print(f'server_num = {server_num}')
-    if server_num <= 20:
-        imagenet_dir = f'/mnt/fast-data{server_num}/datasets/ILSVRC/2012/clsloc/{part}'
+    if hostname == 'oem-Z11PG-D24-Series':
+        print('server: scan test server')
+        imagenet_dir = f'/home/oem/datasets/ILSVRC/2012/clsloc/{part}'
     else:
-        imagenet_dir = f'/fast-data{server_num}/datasets/ILSVRC/2012/clsloc/{part}'
+        server_num = int(hostname[4:6])
+        print(f'server_num = {server_num}')
+        if server_num <= 20:
+            imagenet_dir = f'/mnt/fast-data{server_num}/datasets/ILSVRC/2012/clsloc/{part}'
+        else:
+            imagenet_dir = f'/fast-data{server_num}/datasets/ILSVRC/2012/clsloc/{part}'
     return imagenet_dir
