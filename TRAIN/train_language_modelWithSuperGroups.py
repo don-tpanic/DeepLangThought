@@ -82,8 +82,8 @@ def specific_callbacks(run_name):
 def execute():
     ###################################################
     lr = 3e-5
-    lossWs = [0.1, 1, 2, 3, 5, 7, 10]
-    bert_random = True
+    lossWs = [0.00001]
+    bert_random = False
     for lossW in lossWs:
         version = '11-11-20'
         if bert_random is True:
