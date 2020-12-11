@@ -1,6 +1,6 @@
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '1'
+os.environ["CUDA_VISIBLE_DEVICES"]= '0'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
@@ -350,48 +350,9 @@ def dog2dog_vs_dog2rest(lossWs, version, df, part):
 
 
 
-
-def dog2dog_vs_dog2cat(lossWs, version, df_1, df_2, num_classes=1000):
-    """
-    Compare between supordinates.
-    """
-    fig, ax = plt.subplots()
-    diffs = []  # diff between dog2dog and dog2rest
-    ratios = [] # ratio btw dog2dog and dog2rest
-    for i in range(len(lossWs)):
-
-        lossW = lossWs[i]
-        temp_mean_dist = []  # collects df_1 and df_2's mean dist for a lossW
-        for df in [df_1, df_2]:
-            wnids, indices, categories = load_classes(num_classes=num_classes, df=df)
-            # the entire 1k*1k matrix
-            distMtx = np.load(f'_distance_matrices/version={version}-lossW={lossW}-sup={df}.npy')
-            # the dogs matrix      
-            subMtx = distMtx[indices, :][:, indices]
-            # the uptri of dogs matrix
-            subMtx_uptri = subMtx[np.triu_indices(subMtx.shape[0])]
-            # what we already know about dog vs dog
-            mean_dist = np.mean(subMtx_uptri)
-            std_dist = np.std(subMtx_uptri)
-
-            temp_mean_dist.append(mean_dist)
-
-        ratio = temp_mean_dist[0] / temp_mean_dist[1]
-        ratios.append(ratio)
-
-    ax.plot(lossWs, ratios)
-    ax.set_xlabel('Weight on discrete loss')
-    ax.set_ylabel('Relative distance')
-    plt.grid(True)
-    ax.set_title(f'{df_1} vs {df_2}')
-    plt.savefig(f'RESULTS/{df_1}2{df_2}-distPlot-version={version}-normalised.pdf')
-
-    print('This eval is currently problematic due to unclear comparison....Think more...')
-
-
 def execute(compute_semantic_activation=False,
             compute_distance_matrices=False,
-            compute_RSA=True,
+            compute_RSA=False,
             finer_compare=False,
             dogVSrest=False,
             dogVScat=False,
@@ -399,13 +360,13 @@ def execute(compute_semantic_activation=False,
     ######################
     part = 'val_white'
     lr = 3e-5
-    version = '11-11-20-random'
+    version = '11-11-20'
     w2_depth = 2
     intersect_layer = 'semantic'
     fname1 = 'bert'
     df = None
 
-    lossWs = [0.1, 1, 2, 3, 5, 7, 10]
+    lossWs = [0, 0.1, 1, 2, 3, 5, 7, 10]
     for lossW in lossWs:
         if df is not None:
             lossW = f'{lossW}-sup={df}'
@@ -429,6 +390,7 @@ def execute(compute_semantic_activation=False,
                             bert=False)
     
     if compute_RSA:
+        print('RSA across levels of loss...')
         fname2s = []
         for lossW in lossWs:
             fname2s.append(f'version={version}-lossW={lossW}')
