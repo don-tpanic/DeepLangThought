@@ -214,10 +214,6 @@ def RSA(fname1, fname2, mtx_type='distance', part='val_white'):
 
     elif mtx_type == 'embedding':
         print('emb spearman', spearmanr(mtx1.flatten(), mtx2.flatten()))
-        #print('emb pearson', pearsonr(mtx1.flatten(), mtx2.flatten()))
-
-
-### ###
 
 
 ### finer compare ###
@@ -283,7 +279,6 @@ def finer_distance_compare(lossWs, version, part):
     
 
 # TODO: consider integrate back into the above function later.
-# TODO: accomodate for other supGroups such as fish etc.
 def dog2dog_vs_dog2rest(lossWs, version, df, part):
     """
     The above comparison looks at the change of distance
@@ -344,10 +339,46 @@ def dog2dog_vs_dog2rest(lossWs, version, df, part):
     #ax.legend()
     plt.grid(True)
     ax.set_title(f'{df} vs {df} & {df} vs the rest')
-    plt.savefig(f'RESULTS/{part}/version={version}-{df}-interval.pdf')
+    plt.savefig(f'RESULTS/{part}/version={version}-{df}-ratio.pdf')
     print('plotted.')
 
 
+def dog2dog_vs_dog2rest_V2(lossWs, version, df, part):
+    """
+    Normalise dog v dog by:
+        dog v dog (sup) / dog v dog (reg)
+    """
+    #################
+    num_classes = 129
+    wnids, indices, categories = load_classes(num_classes=num_classes, df=df)
+    bins = 20
+    fig, ax = plt.subplots()
+    ratios = []
+    #################
+    for i in range(len(lossWs)):
+        lossW = lossWs[i]
+        # the entire 1k*1k matrix
+        distMtx_sup = np.load(f'RESRC_{part}/_distance_matrices/version={version}-lossW={lossW}-sup={df}.npy')
+        distMtx_reg = np.load(f'RESRC_{part}/_distance_matrices/version={version}-lossW={lossW}.npy')
+        
+        subMtx_sup = distMtx_sup[indices, :][:, indices]
+        subMtx_reg = distMtx_reg[indices, :][:, indices]
+
+        subMtx_uptri_sup = subMtx_sup[np.triu_indices(subMtx_sup.shape[0])]
+        subMtx_uptri_reg = subMtx_reg[np.triu_indices(subMtx_reg.shape[0])]
+
+        mean_dist_sup = np.mean(subMtx_uptri_sup)
+        mean_dist_reg = np.mean(subMtx_uptri_reg)
+
+        ratios.append(mean_dist_sup / mean_dist_reg)
+    
+    plt.plot(lossWs, ratios)
+    ax.set_xlabel('Weight on discrete loss')
+    ax.set_ylabel('Normalised distance')
+    plt.title('Distance within dog superordinate')
+    plt.grid(True)
+    plt.savefig(f'RESULTS/{part}/version={version}-{df}-normalisedReg.pdf')
+    print('plotted.')
 
 
 def execute(compute_semantic_activation=False,
@@ -355,18 +386,18 @@ def execute(compute_semantic_activation=False,
             compute_RSA=False,
             finer_compare=False,
             dogVSrest=False,
-            dogVScat=False,
+            dogVSrest2=True,
             ):
     ######################
     part = 'val_white'
     lr = 3e-5
-    version = '11-11-20'
+    version = '27-7-20'
     w2_depth = 2
     intersect_layer = 'semantic'
     fname1 = 'bert'
-    df = None
+    df = 'canidae'
 
-    lossWs = [0, 0.1, 1, 2, 3, 5, 7, 10]
+    lossWs = [0.1, 1, 2, 3, 5, 7, 10]
     for lossW in lossWs:
         if df is not None:
             lossW = f'{lossW}-sup={df}'
@@ -403,8 +434,9 @@ def execute(compute_semantic_activation=False,
     if dogVSrest:
         dog2dog_vs_dog2rest(lossWs, version, df, part)
 
-    if dogVScat:
-        dog2dog_vs_dog2cat(lossWs, version, df_1='bird', df_2='reptile')
+    if dogVSrest2:
+        print('Dog v dog V2...')
+        dog2dog_vs_dog2rest_V2(lossWs, version, df, part)
 
 
 
