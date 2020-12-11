@@ -7,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 from scipy.spatial import distance_matrix
 from scipy.stats import spearmanr, pearsonr
+from sklearn.metrics.pairwise import cosine_similarity
 
 import tensorflow as tf
 from tensorflow.keras.applications.vgg16 import preprocess_input
@@ -147,7 +148,7 @@ def run_tsne(version, lossW):
 
 
 ### embedding & distance matrix correlation ###
-def embedding_n_distance_matrices(version, lossW, part, lang_model=False, useVGG=False, bert=False):
+def embedding_n_distance_matrices(version, lossW, part, lang_model=False, useVGG=False, bert=False, sim_func='L2'):
     """
     Given a model,
     compute a embedding and a distance matrix for targeted activations.
@@ -181,12 +182,18 @@ def embedding_n_distance_matrices(version, lossW, part, lang_model=False, useVGG
     np.save(f'RESRC_{part}/_embedding_matrices/{fname}.npy', X)
     print('embedding matrix saved.')
 
-
-    disMtx = distance_matrix(X, X)
-    print(f'fname={fname}, disMtx.shape = ', disMtx.shape)
-    # save based on fname
-    np.save(f'RESRC_{part}/_distance_matrices/{fname}.npy', disMtx)
-    print('distance matrix saved.')
+    if sim_func == 'L2':
+        disMtx = distance_matrix(X, X)
+        print(f'fname={fname}, disMtx.shape = ', disMtx.shape)
+        # save based on fname
+        np.save(f'RESRC_{part}/_distance_matrices/{fname}.npy', disMtx)
+        print('distance matrix saved.')
+    elif sim_func == 'cosine_sim':
+        disMtx = cosine_similarity(X)
+        print(f'fname={fname}, disMtx.shape = ', disMtx.shape)
+        # save based on fname
+        np.save(f'RESRC_{part}/_cosine_sim_matrices/{fname}.npy', disMtx)
+        print('cosine similarity matrix saved.')
 
 
 def RSA(fname1, fname2, mtx_type='distance', part='val_white'):
@@ -207,9 +214,10 @@ def RSA(fname1, fname2, mtx_type='distance', part='val_white'):
     assert mtx1.shape == mtx2.shape
 
     print(f'**** {fname1} vs {fname2} ****')
-    if mtx_type == 'distance':
+    if mtx_type == 'distance' or mtx_type == 'cosine_sim':
         uptri1 = mtx1[np.triu_indices(mtx1.shape[0])]
         uptri2 = mtx2[np.triu_indices(mtx2.shape[0])]
+        print(f'mtx type = {mtx_type}')
         print('uptri spearman', spearmanr(uptri1, uptri2))
 
     elif mtx_type == 'embedding':
@@ -382,22 +390,22 @@ def dog2dog_vs_dog2rest_V2(lossWs, version, df, part):
 
 
 def execute(compute_semantic_activation=False,
-            compute_distance_matrices=False,
-            compute_RSA=False,
+            compute_distance_matrices=True,
+            compute_RSA=True,
             finer_compare=False,
             dogVSrest=False,
-            dogVSrest2=True,
+            dogVSrest2=False,
             ):
     ######################
-    part = 'val_white'
+    part = 'train'
     lr = 3e-5
-    version = '27-7-20'
+    version = '11-11-20'
     w2_depth = 2
     intersect_layer = 'semantic'
     fname1 = 'bert'
-    df = 'canidae'
+    df = None
 
-    lossWs = [0.1, 1, 2, 3, 5, 7, 10]
+    lossWs = [0, 0.1, 1, 2, 3, 5, 7, 10]
     for lossW in lossWs:
         if df is not None:
             lossW = f'{lossW}-sup={df}'
@@ -416,9 +424,10 @@ def execute(compute_semantic_activation=False,
             embedding_n_distance_matrices(
                             version, lossW,
                             part, 
-                            lang_model=True, 
+                            lang_model=False, 
                             useVGG=False, 
-                            bert=False)
+                            bert=True,
+                            sim_func='cosine_sim')
     
     if compute_RSA:
         print('RSA across levels of loss...')
@@ -426,7 +435,7 @@ def execute(compute_semantic_activation=False,
         for lossW in lossWs:
             fname2s.append(f'version={version}-lossW={lossW}')
         for fname2 in fname2s:
-            RSA(fname1, fname2, mtx_type='distance', part=part)
+            RSA(fname1, fname2, mtx_type='cosine_sim', part=part)
     
     if finer_compare:
         finer_distance_compare(lossWs, version, part)
