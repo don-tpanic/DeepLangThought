@@ -7,7 +7,7 @@ import numpy as np
 
 import tensorflow
 import tensorflow.keras as keras
-from tensorflow.keras.utils import plot_model
+#from tensorflow.keras.utils import plot_model
 from tensorflow.keras.models import Model
 from tensorflow.keras.optimizers import Adam
 from tensorflow.python.ops import gen_math_ops
@@ -79,7 +79,7 @@ def lang_model(w2_depth, discrete_frozen=False, num_labels=1000, seed=42):
           print('discrete layer is not trainable.')
 
      model.summary()
-     plot_model(model, to_file='lang_model.png')
+     #plot_model(model, to_file='lang_model.png')
      return model
 
 

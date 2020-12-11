@@ -1,6 +1,6 @@
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '3'
+os.environ["CUDA_VISIBLE_DEVICES"]= '1'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
@@ -60,5 +60,5 @@ def execute(part='val_white'):
         loss, top1acc, top5acc = model.evaluate_generator(gen, steps, verbose=1, workers=3)
         per_lossW_acc[i, :] = [top1acc, top5acc]
     
-    np.save(f'RESULTS/{part}/accuracy/baseline.npy', per_lossW_acc)
-    print('per_lossW_acc saved.')
+    #np.save(f'RESULTS/{part}/accuracy/baseline.npy', per_lossW_acc)
+    #print('per_lossW_acc saved.')
