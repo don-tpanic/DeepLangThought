@@ -1,6 +1,9 @@
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '0'
+os.environ["CUDA_VISIBLE_DEVICES"] = '3'
+if os.environ["CUDA_VISIBLE_DEVICES"] == '2':
+    print('WARNING: DO NOT USE GPU2 ON LOVE18!')
+    exit()
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
@@ -225,8 +228,8 @@ def execute():
     ###########################
     part = 'val_white'
     lr = 3e-5
-    lossWs = [0.00001]
-    version = '11-11-20'
+    lossWs = [0.1, 1, 2, 3, 5, 7, 10]
+    version = '11-11-20-random'
     w2_depth = 2
     df = 'reptile'
     ###########################
@@ -236,7 +239,7 @@ def execute():
     #plot_regular_models_acc(part, lossWs, version, lr, top_n=1)
 
     # with superordinates:
-    eval_models_w_superordinates(part, lossWs, version, lr, w2_depth, df=df)
+    #eval_models_w_superordinates(part, lossWs, version, lr, w2_depth, df=df)
 
     print_accuraries(version, lr, lossWs, div='sup', df=df)
 

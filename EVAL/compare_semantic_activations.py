@@ -1,6 +1,6 @@
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '0'
+os.environ["CUDA_VISIBLE_DEVICES"]= '1'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
@@ -403,11 +403,12 @@ def execute(compute_semantic_activation=False,
     w2_depth = 2
     intersect_layer = 'semantic'
     fname1 = 'bert'
-    df = 'reptile'
+    df = None
 
-    lossWs = [0.1, 1, 2, 3, 5]
+    lossWs = [0.1, 1, 2, 3, 5, 7, 10]
     for lossW in lossWs:
-        lossW = f'{lossW}-sup={df}'
+        if df is not None:
+            lossW = f'{lossW}-sup={df}'
         run_name = f'{version}-lr={str(lr)}-lossW={lossW}'
 
         if compute_semantic_activation:

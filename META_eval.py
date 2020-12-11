@@ -3,6 +3,3 @@
 
 #from EVAL import compare_semantic_activations
 #compare_semantic_activations.execute()
-
-from EVAL import VGG16_finetuned_test
-VGG16_finetuned_test.execute()
