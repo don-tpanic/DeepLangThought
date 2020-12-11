@@ -70,7 +70,7 @@ def specific_callbacks(run_name):
 def execute():
     ###################################################
     lr = 3e-5  # default 3e-5
-    lossWs = [3, 5, 7, 10]
+    lossWs = [0.1, 1, 2, 3, 5, 7, 10]
     bert_random = True
     for lossW in lossWs:
         version = '11-11-20'
