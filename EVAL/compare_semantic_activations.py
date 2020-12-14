@@ -5,6 +5,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
 import matplotlib.pyplot as plt
+from seaborn import violinplot
 from scipy.spatial import distance_matrix
 from scipy.stats import spearmanr, pearsonr
 from sklearn.metrics.pairwise import cosine_similarity
@@ -80,7 +81,6 @@ def grab_activations(model, part, version, lossW):
             print(f'CHECK: saved {file2save}.')
 
 
-### tsne ###
 def tsne_best(X, max_epochs=5):
     """
     To deal with tsne's stochasticity,
@@ -109,6 +109,7 @@ def tsne_best(X, max_epochs=5):
                 best_Y = Y
     print('best_kl_loss = ', best_kl_loss)
     return best_Y
+
 
 def run_tsne(version, lossW):
     """
@@ -144,7 +145,6 @@ def run_tsne(version, lossW):
         text.set_alpha(0.4)
 
     plt.savefig(f'_computed_activations/{version}/lossW={lossW}/tsne.pdf')
-### ###
 
 
 ### embedding & distance matrix correlation ###
@@ -205,7 +205,7 @@ def RSA(fname1, fname2, mtx_type='distance', part='val_white'):
     inputs:
     -------
         names for two pre-computed distance matrices.
-        mtx_type: either distance or embedding matrices.
+        mtx_type: either distance/embedding/cosine_similarity matrices.
     """
     from scipy.stats import spearmanr
 
