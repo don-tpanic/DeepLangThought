@@ -67,7 +67,10 @@ def eval2_indClass_distance(lossWs, part='val_white', version='11-11-20'):
     print('plotted.')
 
 
-def eval3_supClass_distance(lossWs, part='val_white', version='27-7-20'):
+def eval3_supClass_distance_v1(lossWs, part='val_white', version='27-7-20'):
+    """
+    Plot one sup at once. v2 plots all sup at once and compute average
+    """
     #################
     num_classes = 129
     df = 'canidae'
@@ -108,12 +111,61 @@ def eval3_supClass_distance(lossWs, part='val_white', version='27-7-20'):
     print('plotted.')
 
 
+def eval3_supClass_distance_v2(lossWs, part='val_white', version='27-7-20'):
+    """
+    Plot all sup at once.
+    """
+    dfs = ['reptile', 'amphibian', 'fish', 'bird', 'canidae'] # primate missing
+    markers = ['*', '<', 'o', '^', '>']
+
+    all_ratios = np.zeros((len(dfs), len(lossWs)))
+    fig, ax = plt.subplots()
+    for z in range(len(dfs)):
+        df = dfs[z]
+        print(f'processing {df}...')
+        wnids, indices, categories = load_classes(num_classes=1000, df=df)  # num_classes doesn't matter cuz subset<1000
+        ratios = []    # ratio btw dog2dog and dog2rest
+        for i in range(len(lossWs)):
+            lossW = lossWs[i]
+            # the entire 1k*1k matrix
+            distMtx = np.load(f'RESRC_{part}/_distance_matrices/version={version}-lossW={lossW}-sup={df}.npy')
+            # the dogs matrix      
+            subMtx = distMtx[indices, :][:, indices]
+            # the uptri of dogs matrix
+            subMtx_uptri = subMtx[np.triu_indices(subMtx.shape[0])]
+            # what we already know about dog vs dog
+            mean_dist = np.mean(subMtx_uptri)
+            std_dist = np.std(subMtx_uptri)
+            # ------------------------------------------------------
+            # new stuff: dog vs rest
+            nonDog_indices = [i for i in range(1000) if i not in indices]
+            # shape = (129, 871)
+            dogVSrest_mtx = distMtx[indices, :][:, nonDog_indices]
+            dogVSrest_mean_dist = np.mean(dogVSrest_mtx)
+            dogVSrest_std_dist = np.std(dogVSrest_mtx)
+            ratio = mean_dist / dogVSrest_mean_dist
+            ratios.append(ratio)
+
+        if df == 'canidae':
+            df = 'dog'
+        ax.scatter(lossWs, ratios, label=f'{df}', marker=markers[z])
+        all_ratios[z, :] = ratios
+    
+    print('all_ratios.shape = ', all_ratios.shape)
+    average_ratios = np.mean(all_ratios, axis=0)
+    ax.plot(lossWs, average_ratios, label='average')
+    ax.set_xlabel('loss levels')
+    ax.set_ylabel('distance ratio')
+    plt.grid(True)
+    plt.legend()
+    plt.savefig(f'RESULTS/submission/supDistance_avg_ratios.pdf')
+
 
 def execute():
-    lossWs = [ 0.1, 1, 2, 3, 5, 7, 10]
+    lossWs = [0.1, 1, 2, 3, 5, 7, 10]
     #eval1_similarity_correlation(lossWs)
     #eval2_indClass_distance(lossWs)
-    eval3_supClass_distance(lossWs)
+    eval3_supClass_distance_v2(lossWs)
     
 
 
