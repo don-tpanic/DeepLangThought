@@ -1,12 +1,14 @@
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '1'
+os.environ["CUDA_VISIBLE_DEVICES"]= '0'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
 import matplotlib.pyplot as plt
+from seaborn import violinplot
 from scipy.spatial import distance_matrix
 from scipy.stats import spearmanr, pearsonr
+from sklearn.metrics.pairwise import cosine_similarity
 
 import tensorflow as tf
 from tensorflow.keras.applications.vgg16 import preprocess_input
@@ -79,7 +81,6 @@ def grab_activations(model, part, version, lossW):
             print(f'CHECK: saved {file2save}.')
 
 
-### tsne ###
 def tsne_best(X, max_epochs=5):
     """
     To deal with tsne's stochasticity,
@@ -108,6 +109,7 @@ def tsne_best(X, max_epochs=5):
                 best_Y = Y
     print('best_kl_loss = ', best_kl_loss)
     return best_Y
+
 
 def run_tsne(version, lossW):
     """
@@ -143,11 +145,10 @@ def run_tsne(version, lossW):
         text.set_alpha(0.4)
 
     plt.savefig(f'_computed_activations/{version}/lossW={lossW}/tsne.pdf')
-### ###
 
 
 ### embedding & distance matrix correlation ###
-def embedding_n_distance_matrices(version, lossW, part, lang_model=False, useVGG=False, bert=False):
+def embedding_n_distance_matrices(version, lossW, part, lang_model=False, useVGG=False, bert=False, sim_func='L2'):
     """
     Given a model,
     compute a embedding and a distance matrix for targeted activations.
@@ -181,12 +182,18 @@ def embedding_n_distance_matrices(version, lossW, part, lang_model=False, useVGG
     np.save(f'RESRC_{part}/_embedding_matrices/{fname}.npy', X)
     print('embedding matrix saved.')
 
-
-    disMtx = distance_matrix(X, X)
-    print(f'fname={fname}, disMtx.shape = ', disMtx.shape)
-    # save based on fname
-    np.save(f'RESRC_{part}/_distance_matrices/{fname}.npy', disMtx)
-    print('distance matrix saved.')
+    if sim_func == 'L2':
+        disMtx = distance_matrix(X, X)
+        print(f'fname={fname}, disMtx.shape = ', disMtx.shape)
+        # save based on fname
+        np.save(f'RESRC_{part}/_distance_matrices/{fname}.npy', disMtx)
+        print('distance matrix saved.')
+    elif sim_func == 'cosine_sim':
+        disMtx = cosine_similarity(X)
+        print(f'fname={fname}, disMtx.shape = ', disMtx.shape)
+        # save based on fname
+        np.save(f'RESRC_{part}/_cosine_sim_matrices/{fname}.npy', disMtx)
+        print('cosine similarity matrix saved.')
 
 
 def RSA(fname1, fname2, mtx_type='distance', part='val_white'):
@@ -198,7 +205,7 @@ def RSA(fname1, fname2, mtx_type='distance', part='val_white'):
     inputs:
     -------
         names for two pre-computed distance matrices.
-        mtx_type: either distance or embedding matrices.
+        mtx_type: either distance/embedding/cosine_similarity matrices.
     """
     from scipy.stats import spearmanr
 
@@ -207,17 +214,14 @@ def RSA(fname1, fname2, mtx_type='distance', part='val_white'):
     assert mtx1.shape == mtx2.shape
 
     print(f'**** {fname1} vs {fname2} ****')
-    if mtx_type == 'distance':
+    if mtx_type == 'distance' or mtx_type == 'cosine_sim':
         uptri1 = mtx1[np.triu_indices(mtx1.shape[0])]
         uptri2 = mtx2[np.triu_indices(mtx2.shape[0])]
+        print(f'mtx type = {mtx_type}')
         print('uptri spearman', spearmanr(uptri1, uptri2))
 
     elif mtx_type == 'embedding':
         print('emb spearman', spearmanr(mtx1.flatten(), mtx2.flatten()))
-        #print('emb pearson', pearsonr(mtx1.flatten(), mtx2.flatten()))
-
-
-### ###
 
 
 ### finer compare ###
@@ -283,7 +287,6 @@ def finer_distance_compare(lossWs, version, part):
     
 
 # TODO: consider integrate back into the above function later.
-# TODO: accomodate for other supGroups such as fish etc.
 def dog2dog_vs_dog2rest(lossWs, version, df, part):
     """
     The above comparison looks at the change of distance
@@ -344,68 +347,65 @@ def dog2dog_vs_dog2rest(lossWs, version, df, part):
     #ax.legend()
     plt.grid(True)
     ax.set_title(f'{df} vs {df} & {df} vs the rest')
-    plt.savefig(f'RESULTS/{part}/version={version}-{df}-interval.pdf')
+    plt.savefig(f'RESULTS/{part}/version={version}-{df}-ratio.pdf')
     print('plotted.')
 
 
-
-
-
-def dog2dog_vs_dog2cat(lossWs, version, df_1, df_2, num_classes=1000):
+def dog2dog_vs_dog2rest_V2(lossWs, version, df, part):
     """
-    Compare between supordinates.
+    Normalise dog v dog by:
+        dog v dog (sup) / dog v dog (reg)
     """
+    #################
+    num_classes = 129
+    wnids, indices, categories = load_classes(num_classes=num_classes, df=df)
+    bins = 20
     fig, ax = plt.subplots()
-    diffs = []  # diff between dog2dog and dog2rest
-    ratios = [] # ratio btw dog2dog and dog2rest
+    ratios = []
+    #################
     for i in range(len(lossWs)):
-
         lossW = lossWs[i]
-        temp_mean_dist = []  # collects df_1 and df_2's mean dist for a lossW
-        for df in [df_1, df_2]:
-            wnids, indices, categories = load_classes(num_classes=num_classes, df=df)
-            # the entire 1k*1k matrix
-            distMtx = np.load(f'_distance_matrices/version={version}-lossW={lossW}-sup={df}.npy')
-            # the dogs matrix      
-            subMtx = distMtx[indices, :][:, indices]
-            # the uptri of dogs matrix
-            subMtx_uptri = subMtx[np.triu_indices(subMtx.shape[0])]
-            # what we already know about dog vs dog
-            mean_dist = np.mean(subMtx_uptri)
-            std_dist = np.std(subMtx_uptri)
+        # the entire 1k*1k matrix
+        distMtx_sup = np.load(f'RESRC_{part}/_distance_matrices/version={version}-lossW={lossW}-sup={df}.npy')
+        distMtx_reg = np.load(f'RESRC_{part}/_distance_matrices/version={version}-lossW={lossW}.npy')
+        
+        subMtx_sup = distMtx_sup[indices, :][:, indices]
+        subMtx_reg = distMtx_reg[indices, :][:, indices]
 
-            temp_mean_dist.append(mean_dist)
+        subMtx_uptri_sup = subMtx_sup[np.triu_indices(subMtx_sup.shape[0])]
+        subMtx_uptri_reg = subMtx_reg[np.triu_indices(subMtx_reg.shape[0])]
 
-        ratio = temp_mean_dist[0] / temp_mean_dist[1]
-        ratios.append(ratio)
+        mean_dist_sup = np.mean(subMtx_uptri_sup)
+        mean_dist_reg = np.mean(subMtx_uptri_reg)
 
-    ax.plot(lossWs, ratios)
+        ratios.append(mean_dist_sup / mean_dist_reg)
+    
+    plt.plot(lossWs, ratios)
     ax.set_xlabel('Weight on discrete loss')
-    ax.set_ylabel('Relative distance')
+    ax.set_ylabel('Normalised distance')
+    plt.title('Distance within dog superordinate')
     plt.grid(True)
-    ax.set_title(f'{df_1} vs {df_2}')
-    plt.savefig(f'RESULTS/{df_1}2{df_2}-distPlot-version={version}-normalised.pdf')
-
-    print('This eval is currently problematic due to unclear comparison....Think more...')
+    plt.savefig(f'RESULTS/{part}/version={version}-{df}-normalisedReg.pdf')
+    print('plotted.')
 
 
 def execute(compute_semantic_activation=False,
-            compute_distance_matrices=False,
+            compute_distance_matrices=True,
             compute_RSA=True,
             finer_compare=False,
             dogVSrest=False,
-            dogVScat=False,
+            dogVSrest2=False,
             ):
     ######################
-    part = 'val_white'
+    part = 'train'
     lr = 3e-5
-    version = '11-11-20-random'
+    version = '11-11-20'
     w2_depth = 2
     intersect_layer = 'semantic'
     fname1 = 'bert'
     df = None
 
-    lossWs = [0.1, 1, 2, 3, 5, 7, 10]
+    lossWs = [0, 0.1, 1, 2, 3, 5, 7, 10]
     for lossW in lossWs:
         if df is not None:
             lossW = f'{lossW}-sup={df}'
@@ -424,16 +424,18 @@ def execute(compute_semantic_activation=False,
             embedding_n_distance_matrices(
                             version, lossW,
                             part, 
-                            lang_model=True, 
+                            lang_model=False, 
                             useVGG=False, 
-                            bert=False)
+                            bert=True,
+                            sim_func='cosine_sim')
     
     if compute_RSA:
+        print('RSA across levels of loss...')
         fname2s = []
         for lossW in lossWs:
             fname2s.append(f'version={version}-lossW={lossW}')
         for fname2 in fname2s:
-            RSA(fname1, fname2, mtx_type='distance', part=part)
+            RSA(fname1, fname2, mtx_type='cosine_sim', part=part)
     
     if finer_compare:
         finer_distance_compare(lossWs, version, part)
@@ -441,8 +443,9 @@ def execute(compute_semantic_activation=False,
     if dogVSrest:
         dog2dog_vs_dog2rest(lossWs, version, df, part)
 
-    if dogVScat:
-        dog2dog_vs_dog2cat(lossWs, version, df_1='bird', df_2='reptile')
+    if dogVSrest2:
+        print('Dog v dog V2...')
+        dog2dog_vs_dog2rest_V2(lossWs, version, df, part)
 
 
 
