@@ -5,6 +5,8 @@ from seaborn import violinplot
 from scipy.spatial import distance_matrix
 from scipy.stats import spearmanr
 from sklearn.metrics.pairwise import cosine_similarity
+#from matplotlib import rc
+#rc('text', usetex=True)
 
 import tensorflow as tf
 from tensorflow.keras.applications.vgg16 import preprocess_input
@@ -39,10 +41,10 @@ def eval1_similarity_correlation(lossWs, mtx_type='cosine_sim', part='val_white'
             correlations.append(spearmanr(uptri1, uptri2)[0])
     
     ax.scatter(lossWs, correlations)
-    ax.set_xlabel('loss levels')
+    ax.set_xlabel(r'loss levels ($\beta$)')
     ax.set_ylabel('spearman correlations')
     plt.grid(True)
-    plt.savefig('RESULTS/submission/similarity_correlation.pdf')
+    plt.savefig('RESULTS/submission/eval1_similarity_correlation.pdf')
     print('plotted.')
 
 
@@ -59,11 +61,11 @@ def eval2_indClass_distance(lossWs, part='val_white', version='11-11-20'):
         all_uptris.append(subMtx_uptri)
 
     violinplot(data=all_uptris, cut=-5, linewidth=.8, gridsize=300)
-    ax.set_xlabel('loss levels')
+    ax.set_xlabel(r'loss levels ($\beta$)')
     ax.set_xticks(range(len(lossWs)))
     ax.set_xticklabels(lossWs)
     ax.set_ylabel('pairwise class distance')
-    plt.savefig(f'RESULTS/submission/indDistance.pdf')
+    plt.savefig(f'RESULTS/submission/eval2_indDistance.pdf')
     print('plotted.')
 
 
@@ -154,11 +156,11 @@ def eval3_supClass_distance_v2(lossWs, part='val_white', version='27-7-20'):
     print('all_ratios.shape = ', all_ratios.shape)
     average_ratios = np.mean(all_ratios, axis=0)
     ax.plot(lossWs, average_ratios, label='average')
-    ax.set_xlabel('loss levels')
+    ax.set_xlabel(r'loss levels ($\beta$)')
     ax.set_ylabel('distance ratio')
     plt.grid(True)
     plt.legend()
-    plt.savefig(f'RESULTS/submission/supDistance_avg_ratios.pdf')
+    plt.savefig(f'RESULTS/submission/eval3_supDistance_avg_ratios.pdf')
 
 
 def execute():
