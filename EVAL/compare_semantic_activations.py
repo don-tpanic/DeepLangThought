@@ -1,6 +1,6 @@
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '1'
+os.environ["CUDA_VISIBLE_DEVICES"]= '0'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
@@ -390,7 +390,7 @@ def dog2dog_vs_dog2rest_V2(lossWs, version, df, part):
 
 
 def execute(compute_semantic_activation=True,
-            compute_distance_matrices=False,
+            compute_distance_matrices=True,
             compute_RSA=False,
             finer_compare=False,
             dogVSrest=False,
@@ -399,13 +399,13 @@ def execute(compute_semantic_activation=True,
     ######################
     part = 'val_white'
     lr = 3e-5
-    version = '15-12-20'
-    w2_depth = 1
+    version = '11-11-20'
+    w2_depth = 2
     intersect_layer = 'semantic'
     fname1 = 'bert'
-    df = None
+    df = 'primate'
 
-    lossWs = [0, 0.1, 3, 5, 7, 10]
+    lossWs = [0, 0.1, 1, 2, 3, 5, 7, 10]
     for lossW in lossWs:
         if df is not None:
             lossW = f'{lossW}-sup={df}'
@@ -427,7 +427,7 @@ def execute(compute_semantic_activation=True,
                             lang_model=False, 
                             useVGG=False, 
                             bert=True,
-                            sim_func='cosine_sim')
+                            sim_func='distance')
     
     if compute_RSA:
         print('RSA across levels of loss...')
