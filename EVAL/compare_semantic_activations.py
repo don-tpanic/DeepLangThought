@@ -1,6 +1,6 @@
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '0'
+os.environ["CUDA_VISIBLE_DEVICES"]= '1'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
@@ -397,10 +397,10 @@ def execute(compute_semantic_activation=False,
             dogVSrest2=False,
             ):
     ######################
-    part = 'train'
+    part = 'val_white'
     lr = 3e-5
-    version = '11-11-20'
-    w2_depth = 2
+    version = '15-12-20'
+    w2_depth = 1
     intersect_layer = 'semantic'
     fname1 = 'bert'
     df = None
@@ -424,7 +424,7 @@ def execute(compute_semantic_activation=False,
             embedding_n_distance_matrices(
                             version, lossW,
                             part, 
-                            lang_model=False, 
+                            lang_model=True, 
                             useVGG=False, 
                             bert=True,
                             sim_func='cosine_sim')
@@ -435,7 +435,7 @@ def execute(compute_semantic_activation=False,
         for lossW in lossWs:
             fname2s.append(f'version={version}-lossW={lossW}')
         for fname2 in fname2s:
-            RSA(fname1, fname2, mtx_type='cosine_sim', part=part)
+            RSA(fname1, fname2, mtx_type='distance', part=part)
     
     if finer_compare:
         finer_distance_compare(lossWs, version, part)
