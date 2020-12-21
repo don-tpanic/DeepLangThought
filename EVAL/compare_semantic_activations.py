@@ -182,7 +182,7 @@ def embedding_n_distance_matrices(version, lossW, part, lang_model=False, useVGG
     np.save(f'RESRC_{part}/_embedding_matrices/{fname}.npy', X)
     print('embedding matrix saved.')
 
-    if sim_func == 'L2':
+    if sim_func == 'distance':
         disMtx = distance_matrix(X, X)
         print(f'fname={fname}, disMtx.shape = ', disMtx.shape)
         # save based on fname
@@ -389,9 +389,9 @@ def dog2dog_vs_dog2rest_V2(lossWs, version, df, part):
     print('plotted.')
 
 
-def execute(compute_semantic_activation=False,
+def execute(compute_semantic_activation=True,
             compute_distance_matrices=True,
-            compute_RSA=True,
+            compute_RSA=False,
             finer_compare=False,
             dogVSrest=False,
             dogVSrest2=False,
@@ -399,11 +399,11 @@ def execute(compute_semantic_activation=False,
     ######################
     part = 'val_white'
     lr = 3e-5
-    version = '15-12-20'
-    w2_depth = 1
+    version = '11-11-20'
+    w2_depth = 2
     intersect_layer = 'semantic'
     fname1 = 'bert'
-    df = None
+    df = 'amphibian'
 
     lossWs = [0, 0.1, 1, 2, 3, 5, 7, 10]
     for lossW in lossWs:
@@ -426,7 +426,7 @@ def execute(compute_semantic_activation=False,
                             part, 
                             lang_model=True, 
                             useVGG=False, 
-                            bert=True,
+                            bert=False,
                             sim_func='cosine_sim')
     
     if compute_RSA:
@@ -435,7 +435,7 @@ def execute(compute_semantic_activation=False,
         for lossW in lossWs:
             fname2s.append(f'version={version}-lossW={lossW}')
         for fname2 in fname2s:
-            RSA(fname1, fname2, mtx_type='distance', part=part)
+            RSA(fname1, fname2, mtx_type='cosine_sim', part=part)
     
     if finer_compare:
         finer_distance_compare(lossWs, version, part)
