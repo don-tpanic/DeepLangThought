@@ -389,7 +389,7 @@ def dog2dog_vs_dog2rest_V2(lossWs, version, df, part):
     print('plotted.')
 
 
-def execute(compute_semantic_activation=True,
+def execute(compute_semantic_activation=False,
             compute_distance_matrices=True,
             compute_RSA=False,
             finer_compare=False,
@@ -403,7 +403,7 @@ def execute(compute_semantic_activation=True,
     w2_depth = 2
     intersect_layer = 'semantic'
     fname1 = 'bert'
-    df = 'amphibian'
+    df = 'bird'
 
     lossWs = [0, 0.1, 1, 2, 3, 5, 7, 10]
     for lossW in lossWs:
@@ -427,7 +427,7 @@ def execute(compute_semantic_activation=True,
                             lang_model=True, 
                             useVGG=False, 
                             bert=False,
-                            sim_func='cosine_sim')
+                            sim_func='distance')
     
     if compute_RSA:
         print('RSA across levels of loss...')
@@ -435,7 +435,7 @@ def execute(compute_semantic_activation=True,
         for lossW in lossWs:
             fname2s.append(f'version={version}-lossW={lossW}')
         for fname2 in fname2s:
-            RSA(fname1, fname2, mtx_type='cosine_sim', part=part)
+            RSA(fname1, fname2, mtx_type='distance', part=part)
     
     if finer_compare:
         finer_distance_compare(lossWs, version, part)

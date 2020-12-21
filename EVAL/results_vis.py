@@ -113,11 +113,11 @@ def eval3_supClass_distance_v1(lossWs, part='val_white', version='27-7-20'):
     print('plotted.')
 
 
-def eval3_supClass_distance_v2(lossWs, part='val_white', version='27-7-20'):
+def eval3_supClass_distance_v2(lossWs, part='val_white', version='11-11-20'):
     """
     Plot all sup at once.
     """
-    dfs = ['reptile', 'amphibian', 'fish', 'bird', 'canidae'] # primate missing
+    dfs = ['reptile', 'amphibian', 'fish', 'bird', 'canidae', 'primate']    
     markers = ['*', '<', 'o', '^', '>']
 
     all_ratios = np.zeros((len(dfs), len(lossWs)))
@@ -164,7 +164,7 @@ def eval3_supClass_distance_v2(lossWs, part='val_white', version='27-7-20'):
 
 
 def execute():
-    lossWs = [0.1, 1, 2, 3, 5, 7, 10]
+    lossWs = [0, 0.1, 1, 2, 3, 5, 7, 10]
     #eval1_similarity_correlation(lossWs)
     #eval2_indClass_distance(lossWs)
     eval3_supClass_distance_v2(lossWs)
