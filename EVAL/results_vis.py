@@ -117,13 +117,15 @@ def eval3_supClass_distance_v2(lossWs, part='val_white', version='11-11-20'):
     """
     Plot all sup at once.
     """
-    dfs = ['reptile', 'amphibian', 'fish', 'bird', 'canidae', 'primate']    
+    dfs = ['reptile', 'amphibian', 'bird', 'primate', 'canidae']    
     markers = ['*', '<', 'o', '^', '>']
 
     all_ratios = np.zeros((len(dfs), len(lossWs)))
     fig, ax = plt.subplots()
     for z in range(len(dfs)):
         df = dfs[z]
+        if df == 'canidae':
+            version = '27-7-20'
         print(f'processing {df}...')
         wnids, indices, categories = load_classes(num_classes=1000, df=df)  # num_classes doesn't matter cuz subset<1000
         ratios = []    # ratio btw dog2dog and dog2rest

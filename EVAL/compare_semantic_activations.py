@@ -390,10 +390,10 @@ def dog2dog_vs_dog2rest_V2(lossWs, version, df, part):
 
 
 def execute(compute_semantic_activation=False,
-            compute_distance_matrices=True,
+            compute_distance_matrices=False,
             compute_RSA=False,
             finer_compare=False,
-            dogVSrest=False,
+            dogVSrest=True,
             dogVSrest2=False,
             ):
     ######################
@@ -403,7 +403,7 @@ def execute(compute_semantic_activation=False,
     w2_depth = 2
     intersect_layer = 'semantic'
     fname1 = 'bert'
-    df = 'bird'
+    df = 'fish'
 
     lossWs = [0, 0.1, 1, 2, 3, 5, 7, 10]
     for lossW in lossWs:
