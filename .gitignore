@@ -2,7 +2,7 @@
 .DS_Store
 ._.DS_Store
 .npy
-#_trained_weights/
+_trained_weights/
 *.out
 ._*
 *.h5
