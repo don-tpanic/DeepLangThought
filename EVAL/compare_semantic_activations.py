@@ -8,7 +8,7 @@ import matplotlib.pyplot as plt
 from seaborn import violinplot
 from scipy.spatial import distance_matrix
 from scipy.stats import spearmanr, pearsonr
-from sklearn.metrics.pairwise import cosine_similarity
+from sklearn.metrics.pairwise import cosine_similarity, cosine_distances
 
 import tensorflow as tf
 from tensorflow.keras.applications.vgg16 import preprocess_input
@@ -194,6 +194,13 @@ def embedding_n_distance_matrices(version, lossW, part, lang_model=False, useVGG
         # save based on fname
         np.save(f'RESRC_{part}/_cosine_sim_matrices/{fname}.npy', disMtx)
         print('cosine similarity matrix saved.')
+    elif sim_func == 'cosine_dist':
+        disMtx = cosine_distances(X)
+        print(f'fname={fname}, disMtx.shape = ', disMtx.shape)
+        # save based on fname
+        np.save(f'RESRC_{part}/_cosine_dist_matrices/{fname}.npy', disMtx)
+        print('cosine distance matrix saved.')
+
 
 
 def RSA(fname1, fname2, mtx_type='distance', part='val_white'):
@@ -214,7 +221,7 @@ def RSA(fname1, fname2, mtx_type='distance', part='val_white'):
     assert mtx1.shape == mtx2.shape
 
     print(f'**** {fname1} vs {fname2} ****')
-    if mtx_type == 'distance' or mtx_type == 'cosine_sim':
+    if mtx_type in ['distance', 'cosine_sim', 'cosine_dist']:
         uptri1 = mtx1[np.triu_indices(mtx1.shape[0])]
         uptri2 = mtx2[np.triu_indices(mtx2.shape[0])]
         print(f'mtx type = {mtx_type}')
@@ -390,10 +397,10 @@ def dog2dog_vs_dog2rest_V2(lossWs, version, df, part):
 
 
 def execute(compute_semantic_activation=False,
-            compute_distance_matrices=False,
-            compute_RSA=False,
+            compute_distance_matrices=True,
+            compute_RSA=True,
             finer_compare=False,
-            dogVSrest=True,
+            dogVSrest=False,
             dogVSrest2=False,
             ):
     ######################
@@ -403,7 +410,7 @@ def execute(compute_semantic_activation=False,
     w2_depth = 2
     intersect_layer = 'semantic'
     fname1 = 'bert'
-    df = 'fish'
+    df = None
 
     lossWs = [0, 0.1, 1, 2, 3, 5, 7, 10]
     for lossW in lossWs:
@@ -424,10 +431,10 @@ def execute(compute_semantic_activation=False,
             embedding_n_distance_matrices(
                             version, lossW,
                             part, 
-                            lang_model=True, 
+                            lang_model=False, 
                             useVGG=False, 
-                            bert=False,
-                            sim_func='distance')
+                            bert=True,
+                            sim_func='cosine_dist')
     
     if compute_RSA:
         print('RSA across levels of loss...')
@@ -435,7 +442,7 @@ def execute(compute_semantic_activation=False,
         for lossW in lossWs:
             fname2s.append(f'version={version}-lossW={lossW}')
         for fname2 in fname2s:
-            RSA(fname1, fname2, mtx_type='distance', part=part)
+            RSA(fname1, fname2, mtx_type='cosine_dist', part=part)
     
     if finer_compare:
         finer_distance_compare(lossWs, version, part)

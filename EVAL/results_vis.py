@@ -34,7 +34,7 @@ def eval1_similarity_correlation(lossWs, mtx_type='cosine_sim', part='val_white'
         inferred = np.load(f'RESRC_{part}/_{mtx_type}_matrices/version={version}-lossW={lossW}.npy')
         assert true_bert.shape == inferred.shape
 
-        if mtx_type == 'distance' or mtx_type == 'cosine_sim':
+        if mtx_type in ['distance', 'cosine_sim', 'cosine_dist']:
             uptri1 = true_bert[np.triu_indices(true_bert.shape[0])]
             uptri2 = inferred[np.triu_indices(inferred.shape[0])]
             print('uptri spearman', spearmanr(uptri1, uptri2))
@@ -52,6 +52,13 @@ def eval2_indClass_distance(lossWs, part='val_white', version='11-11-20'):
     wnids, indices, categories = load_classes(num_classes=1000, df='ranked')
     fig, ax = plt.subplots()
     all_uptris = []
+
+    # first the reference distance distribution
+    distMtx = np.load(f'RESRC_{part}/_distance_matrices/bert.npy')      
+    subMtx = distMtx[indices, :][:, indices]
+    subMtx_uptri = subMtx[np.triu_indices(subMtx.shape[0])]
+    all_uptris.append(subMtx_uptri)
+
     for i in range(len(lossWs)):
         lossW = lossWs[i]
         distMtx = np.load(f'RESRC_{part}/_distance_matrices/version={version}-lossW={lossW}.npy')      
@@ -62,8 +69,8 @@ def eval2_indClass_distance(lossWs, part='val_white', version='11-11-20'):
 
     violinplot(data=all_uptris, cut=-5, linewidth=.8, gridsize=300)
     ax.set_xlabel(r'loss levels ($\beta$)')
-    ax.set_xticks(range(len(lossWs)))
-    ax.set_xticklabels(lossWs)
+    ax.set_xticks(range(len(lossWs)+1))
+    ax.set_xticklabels(['reference'] + lossWs)
     ax.set_ylabel('pairwise class distance')
     plt.savefig(f'RESULTS/submission/eval2_indDistance.pdf')
     print('plotted.')
@@ -167,9 +174,9 @@ def eval3_supClass_distance_v2(lossWs, part='val_white', version='11-11-20'):
 
 def execute():
     lossWs = [0, 0.1, 1, 2, 3, 5, 7, 10]
-    #eval1_similarity_correlation(lossWs)
-    #eval2_indClass_distance(lossWs)
-    eval3_supClass_distance_v2(lossWs)
+    #eval1_similarity_correlation(lossWs, mtx_type='cosine_dist')
+    eval2_indClass_distance(lossWs)
+    #eval3_supClass_distance_v2(lossWs)
     
 
 
