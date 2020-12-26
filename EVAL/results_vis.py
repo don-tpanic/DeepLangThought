@@ -113,7 +113,7 @@ def eval3_supClass_distance_v1(lossWs, part='val_white', version='27-7-20'):
         print(f'dog2rest = {dogVSrest_mean_dist}(std = {dogVSrest_std_dist}')
 
     ax.scatter(lossWs, ratios)
-    ax.set_xlabel('loss levels')
+    ax.set_xlabel(r'loss levels ($\beta$)')
     ax.set_ylabel('relative distance')
     plt.grid(True)
     plt.savefig(f'RESULTS/submission/supDistance_ratio-{df}.pdf')
@@ -124,8 +124,8 @@ def eval3_supClass_distance_v2(lossWs, part='val_white', version='11-11-20'):
     """
     Plot all sup at once.
     """
-    dfs = ['reptile', 'amphibian', 'bird', 'primate', 'canidae']    
-    markers = ['*', '<', 'o', '^', '>']
+    dfs = ['reptile', 'amphibian', 'bird', 'primate', 'fish', 'canidae']    
+    markers = ['*', '<', 'o', '^', '>', '+']
 
     all_ratios = np.zeros((len(dfs), len(lossWs)))
     fig, ax = plt.subplots()
@@ -133,6 +133,8 @@ def eval3_supClass_distance_v2(lossWs, part='val_white', version='11-11-20'):
         df = dfs[z]
         if df == 'canidae':
             version = '27-7-20'
+        else:
+            version = '11-11-20'
         print(f'processing {df}...')
         wnids, indices, categories = load_classes(num_classes=1000, df=df)  # num_classes doesn't matter cuz subset<1000
         ratios = []    # ratio btw dog2dog and dog2rest
@@ -176,7 +178,7 @@ def execute():
     lossWs = [0, 0.1, 1, 2, 3, 5, 7, 10]
     #eval1_similarity_correlation(lossWs, mtx_type='cosine_dist')
     eval2_indClass_distance(lossWs)
-    #eval3_supClass_distance_v2(lossWs)
+    eval3_supClass_distance_v2(lossWs)
     
 
 
