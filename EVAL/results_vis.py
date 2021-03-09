@@ -74,7 +74,7 @@ def eval2_indClass_distance(lossWs, part='val_white', version='11-11-20'):
 
     violinplot(data=all_uptris, cut=-5, linewidth=.8, gridsize=300)
     ax.set_xlabel(r'loss levels ($\beta$)')
-    ax.set_xticks(range(len(lossWs)+1))
+    ax.set_xticks(range(len(lossWs)))
     # ax.set_xticklabels(['reference'] + lossWs)
     ax.set_ylabel('pairwise class distance')
     plt.savefig(f'RESULTS/submission/Exp1_fig2.pdf')
@@ -239,10 +239,10 @@ def eval1_similarity_correlation_v2(lossWs, mtx_type='cosine_sim', part='val_whi
 def execute():
     lossWs = [0, 0.1, 1, 2, 3, 5, 7, 10]
     # eval1_similarity_correlation(lossWs, mtx_type='cosine_dist')
-    # eval2_indClass_distance(lossWs)
+    eval2_indClass_distance(lossWs)
     # eval3_supClass_distance_v2(lossWs)
 
-    eval1_similarity_correlation_v2(lossWs, mtx_type='cosine_dist')
+    # eval1_similarity_correlation_v2(lossWs, mtx_type='cosine_dist')
     
 
 
