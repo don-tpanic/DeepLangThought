@@ -1,6 +1,6 @@
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '1'
+os.environ["CUDA_VISIBLE_DEVICES"]= '0'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
@@ -410,8 +410,10 @@ def execute(compute_semantic_activation=False,
     w2_depth = 2
     intersect_layer = 'semantic'
     fname1 = 'bert'
-    df = 'fish'
+    df = 'primate'
+    sim_func = 'cosine_dist'
 
+    # lossWs = [0, 0.1, 1, 2, 3, 5, 7, 10]
     lossWs = [0, 0.1, 1, 2, 3, 5, 7, 10]
     for lossW in lossWs:
         if df is not None:
@@ -434,7 +436,7 @@ def execute(compute_semantic_activation=False,
                             lang_model=True, 
                             useVGG=False, 
                             bert=False,
-                            sim_func='distance')
+                            sim_func=sim_func)
     
     if compute_RSA:
         print('RSA across levels of loss...')
