@@ -268,7 +268,9 @@ def Exp1_AB(lossWs, mtx_type='cosine_dist', part='val_white', version='11-11-20'
             print('uptri spearman', spearmanr(uptri1, uptri2))
             correlations.append(spearmanr(uptri1, uptri2)[0])
     
-    ax[0].scatter(lossWs, correlations)
+    ax[0].scatter(np.arange(len(lossWs)), correlations)
+    ax[0].set_xticks(np.arange(len(lossWs)))
+    ax[0].set_xticklabels(lossWs)
     ax[0].set_xlabel(r'Labelling pressure ($\beta$)')
     ax[0].set_ylabel('Spearman correlations')
     ax[0].set_title('(A)')
@@ -336,12 +338,14 @@ def Exp2_AB(lossWs, mtx_type='cosine_dist', part='val_white', version='11-11-20'
                 accu_correlations[i, j] = spearmanr(uptri1, uptri2)[0]
                 correlations.append(spearmanr(uptri1, uptri2)[0])
         if sups[i] == 'canidae':
-            ax[0].scatter(lossWs, correlations, marker=markers[i], label='dog')
+            ax[0].scatter(np.arange(len(lossWs)), correlations, marker=markers[i], label='dog')
         else:
-            ax[0].scatter(lossWs, correlations, marker=markers[i], label=sups[i])    
+            ax[0].scatter(np.arange(len(lossWs)), correlations, marker=markers[i], label=sups[i])    
     
 
-    ax[0].plot(lossWs, np.mean(accu_correlations, axis=0), label='average')
+    ax[0].plot(np.arange(len(lossWs)), np.mean(accu_correlations, axis=0), label='average')
+    ax[0].set_xticks(np.arange(len(lossWs)))
+    ax[0].set_xticklabels(lossWs)
     ax[0].set_xlabel(r'Labelling pressure ($\beta$)')
     ax[0].set_ylabel('Spearman correlations')
     ax[0].set_title('(A)')
@@ -386,16 +390,18 @@ def Exp2_AB(lossWs, mtx_type='cosine_dist', part='val_white', version='11-11-20'
 
         if df == 'canidae':
             df = 'dog'
-        ax[1].scatter(lossWs, ratios, label=f'{df}', marker=markers[z])
+        ax[1].scatter(np.arange(len(lossWs)), ratios, label=f'{df}', marker=markers[z])
         all_ratios[z, :] = ratios
     
     print('all_ratios.shape = ', all_ratios.shape)
     average_ratios = np.mean(all_ratios, axis=0)
-    ax[1].plot(lossWs, average_ratios, label='average')
+    ax[1].plot(np.arange(len(lossWs)), average_ratios, label='average')
     ax[1].set_xlabel(r'Labelling pressure ($\beta$)')
     ax[1].set_ylabel('Distance ratio')
     ax[1].grid(True)
     ax[1].set_title('(B)')
+    ax[1].set_xticks(np.arange(len(lossWs)))
+    ax[1].set_xticklabels(lossWs)
     plt.tight_layout()
     plt.legend()
     plt.savefig('RESULTS/submission/Exp2_AB.pdf')
@@ -409,7 +415,7 @@ def execute():
     # eval3_supClass_distance_v2(lossWs)
     # eval1_similarity_correlation_v2(lossWs, mtx_type='cosine_dist')
     Exp1_AB(lossWs)
-    # Exp2_AB(lossWs)
+    Exp2_AB(lossWs)
     
 
 
