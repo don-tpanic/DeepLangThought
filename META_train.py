@@ -1,8 +1,15 @@
-"""
-META train
-"""
-#from TRAIN import train_language_model
-#train_language_model.execute()
-
+import argparse
+from TRAIN import train_language_model
 from TRAIN import train_language_modelWithSuperGroups
-train_language_modelWithSuperGroups.execute()
+
+
+parser = argparse.ArgumentParser()
+parser.add_argument('--option', dest='run')
+args = parser.parse_args()
+
+
+if __name__ == '__main__':
+    if args.run == 'finegrain':
+        train_language_model.execute()
+    elif args.run == 'coarsegrain':
+        train_language_modelWithSuperGroups.execute()

@@ -70,14 +70,14 @@ def specific_callbacks(run_name):
 def execute():
     ###################################################
     lr = 3e-5  # default 3e-5
-    lossWs = [3, 5, 7, 10]
+    lossWs = [0, 0.1, 1, 2, 3, 5, 7, 10]
     bert_random = False
     for lossW in lossWs:
-        version = '15-12-20'
+        version = '11-11-20'
         if bert_random is True:
             version = f'{version}-random'
         discrete_frozen = False
-        w2_depth = 1
+        w2_depth = 2
         run_name = f'{version}-lr={str(lr)}-lossW={lossW}'
         print('run_name = ', run_name)
         ###################################################

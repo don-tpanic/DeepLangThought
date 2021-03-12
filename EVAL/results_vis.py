@@ -191,7 +191,7 @@ def Exp2_AB(lossWs, mtx_type='cosine_dist', part='val_white', version='11-11-20'
 
 def execute():
     lossWs = [0, 0.1, 1, 2, 3, 5, 7, 10]
-
+    
     Exp1_AB(lossWs)
     Exp2_AB(lossWs)
     

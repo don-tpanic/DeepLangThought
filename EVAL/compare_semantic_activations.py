@@ -412,8 +412,6 @@ def execute(compute_semantic_activation=False,
     fname1 = 'bert'
     df = 'primate'
     sim_func = 'cosine_dist'
-
-    # lossWs = [0, 0.1, 1, 2, 3, 5, 7, 10]
     lossWs = [0, 0.1, 1, 2, 3, 5, 7, 10]
     for lossW in lossWs:
         if df is not None:
