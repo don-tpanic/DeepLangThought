@@ -103,9 +103,10 @@ def lang_model_contrastive(config):
                """
                super(Model, self).__init__()
                self.config = config
-               self.saved_model = tf.saved_model.load(self.config['path'])
 
                if self.config is not None:
+                    self.saved_model = tf.saved_model.load(self.config['path'])
+
                     # TODO: hardcoded, better way to do this?
                     self.w2_dense0_layer = tf.keras.layers.Dense(4096, 
                                                                  activation='relu',
@@ -126,7 +127,9 @@ def lang_model_contrastive(config):
                     #      momentum=momentum,
                     #      weight_decay=weight_decay,
                     #      exclude_from_weight_decay=['batch_normalization', 'bias', 'head_supervised'])
-
+               else: 
+                    self.saved_model = tf.saved_model.load('r50_1x_sk0/saved_model/')
+                    
           def call(self, inputs):
                """
                Straightforward feedforward net
