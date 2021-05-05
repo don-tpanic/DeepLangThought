@@ -1,6 +1,6 @@
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '1'
+os.environ["CUDA_VISIBLE_DEVICES"]= '0'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np
@@ -48,7 +48,7 @@ def train_n_val_data_gen(subset, bert_random=False):
                         seed=42,
                         shuffle=True,
                         subset=subset,
-                        validation_split=0.01,
+                        validation_split=0.1,
                         class_mode='categorical',  # only used for lang due to BERT indexing
                         target_size=(224, 224),
                         preprocessing_function=preprocess_input,
@@ -70,7 +70,7 @@ def execute():
                   metrics=['acc'])
 
     # data
-    train_gen, train_steps = train_n_val_data_gen(subset='validation')
+    train_gen, train_steps = train_n_val_data_gen(subset='training')
     val_gen, val_steps = train_n_val_data_gen(subset='validation')
 
     # callbacks and fitting
