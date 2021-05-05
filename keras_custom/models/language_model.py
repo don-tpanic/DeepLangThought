@@ -89,6 +89,11 @@ def lang_model_contrastive(config):
           This model uses pretrained simclr as front end.
           And follows with semantic layers, prediction layer as
           the same as the previous model.
+
+     Impl:
+     -----
+          We use config to modify the setup of the model.
+          When config is None, the model is the pretrained SIMCLR itself.
      """
      class Model(tf.keras.Model):
           def __init__(self, config):
@@ -97,43 +102,46 @@ def lang_model_contrastive(config):
                And add the same layers as in previous version.
                """
                super(Model, self).__init__()
-               self.saved_model = tf.saved_model.load(config['path'])
+               self.config = config
+               self.saved_model = tf.saved_model.load(self.config['path'])
 
-               # TODO: hardcoded, better way to do this?
-               self.w2_dense0_layer = tf.keras.layers.Dense(4096, 
-                                                            activation='relu',
-                                                            name=f"w2_dense_0")
-               self.w2_dense1_layer = tf.keras.layers.Dense(4096, 
-                                                            activation='relu',
-                                                            name=f"w2_dense_1")
-               self.semantic_layer = tf.keras.layers.Dense(768, 
-                                                           activation=None,
-                                                           name='semantic_layer')
-               
-               # TODO: config['label_type'] == 'fine-grained, num_classes = 1000
-               self.classify_layer = tf.keras.layers.Dense(1000, 
-                                                           activation='softmax',
-                                                           name='discrete_layer')
-               # self.optimizer = LARSOptimizer(
-               #      learning_rate,
-               #      momentum=momentum,
-               #      weight_decay=weight_decay,
-               #      exclude_from_weight_decay=['batch_normalization', 'bias', 'head_supervised'])
+               if self.config is not None:
+                    # TODO: hardcoded, better way to do this?
+                    self.w2_dense0_layer = tf.keras.layers.Dense(4096, 
+                                                                 activation='relu',
+                                                                 name=f"w2_dense_0")
+                    self.w2_dense1_layer = tf.keras.layers.Dense(4096, 
+                                                                 activation='relu',
+                                                                 name=f"w2_dense_1")
+                    self.semantic_layer = tf.keras.layers.Dense(768, 
+                                                            activation=None,
+                                                            name='semantic_layer')
+                    
+                    # TODO: config['label_type'] == 'fine-grained, num_classes = 1000
+                    self.classify_layer = tf.keras.layers.Dense(1000, 
+                                                            activation='softmax',
+                                                            name='discrete_layer')
+                    # self.optimizer = LARSOptimizer(
+                    #      learning_rate,
+                    #      momentum=momentum,
+                    #      weight_decay=weight_decay,
+                    #      exclude_from_weight_decay=['batch_normalization', 'bias', 'head_supervised'])
 
           def call(self, inputs):
                """
                Straightforward feedforward net
                """
-               # x = self.saved_model(x['image'], trainable=False)
                simclr_outputs = self.saved_model(inputs, trainable=False)
-               x = self.w2_dense0_layer(simclr_outputs['final_avg_pool'])
-               x = self.w2_dense1_layer(x)
-               x = self.semantic_layer(x)
-               x = self.classify_layer(x)
-               return x
+               if self.config is None:
+                    return simclr_outputs['final_avg_pool']
+               else:
+                    x = self.w2_dense0_layer(simclr_outputs['final_avg_pool'])
+                    x = self.w2_dense1_layer(x)
+                    semantic_output = self.semantic_layer(x)
+                    classify_output = self.classify_layer(semantic_output)
+                    return semantic_output, classify_output
      return Model(config)
 
 
 if __name__ == '__main__':
-     config = load_config('test_v1')
-     lang_model_contrastive(config)
+     pass
