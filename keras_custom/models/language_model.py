@@ -3,6 +3,7 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ["CUDA_VISIBLE_DEVICES"]= '3'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
+import yaml
 import numpy as np
 
 import tensorflow as tf
@@ -95,6 +96,14 @@ def lang_model_contrastive(config):
           We use config to modify the setup of the model.
           When config is None, the model is the pretrained SIMCLR itself.
      """
+
+     # TODO: this needs get out of model
+     def load_config(config_version):
+          with open(os.path.join('configs', f'{config_version}.yaml')) as f:
+               config = yaml.safe_load(f)
+          print(f'[Check] Loading [{config_version}]')
+          return config
+    
      class Model(tf.keras.Model):
           def __init__(self, config):
                """
@@ -102,7 +111,7 @@ def lang_model_contrastive(config):
                And add the same layers as in previous version.
                """
                super(Model, self).__init__()
-               self.config = config
+               self.config = load_config(config)
 
                if self.config is not None:
                     self.saved_model = tf.saved_model.load(self.config['path'])
