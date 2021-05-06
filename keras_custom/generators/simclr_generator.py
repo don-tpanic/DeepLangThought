@@ -429,18 +429,21 @@ class SafeDirectoryIterator(SafeIterator):
             # convert to tensor so can be preprocessed by simclr 
             # _preprocess
             # and then convert back to array
-            x_tensor = tf.convert_to_tensor(x, dtype=tf.uint8)
-            x_preprocessed = simclr_preprocessing._preprocess(x_tensor)
-            x = x_preprocessed.numpy()
+            x = tf.convert_to_tensor(x, dtype=tf.uint8)
+            x = simclr_preprocessing._preprocess(x)
+            # NOTE(ken) convert back to numpy or not 
+            # both work n no influence on training time.
+            x = x.numpy()
             ### ###
             # Pillow images should be closed after `load_img`,
             # but not PIL images.
             if hasattr(img, 'close'):
                 img.close()
-            # if self:
-            #     params = self.get_random_transform(x.shape)
-            #     x = self.apply_transform(x, params)
-            #     x = self.standardize(x)
+            if self:
+                params = self.get_random_transform(x.shape)
+                x = self.apply_transform(x, params)
+                x = self.standardize(x)
+            np.save('simclr_goinbatch.npy', x)
             batch_x[i] = x
 
         # optionally save augmented images to disk for debugging purposes
