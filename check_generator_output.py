@@ -52,7 +52,7 @@ def compare_generator_outputs(generator_list=['lang', 'simclr']):
     plt.savefig('check_generator_output.png')
 
 
-def check_simclr_gen_outputs(num_imgs=8):
+def check_simclr_gen_outputs(num_imgs=4):
     fig, ax = plt.subplots(1, num_imgs)
 
     gen, steps = simclr_gen(
@@ -67,7 +67,8 @@ def check_simclr_gen_outputs(num_imgs=8):
         target_size=(224, 224),
         preprocessing_function=None,
         horizontal_flip=False, 
-        wordvec_mtx=np.load('data_local/imagenet2vec/imagenet2vec_1k.npy'))
+        wordvec_mtx=np.load('data_local/imagenet2vec/imagenet2vec_1k.npy'),
+        simclr_augment=False)
 
     x, y = gen.__getitem__(idx=0)
 
@@ -75,7 +76,7 @@ def check_simclr_gen_outputs(num_imgs=8):
         img = x[i]
         ax[i].imshow(img)
 
-    plt.savefig('simclr_generator_outputs.png')
+    plt.savefig('simclr_generator_outputs2.png')
 
 
 if __name__ == '__main__':
