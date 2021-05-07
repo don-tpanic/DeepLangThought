@@ -456,12 +456,12 @@ def preprocess_image(image, height, width, is_training=False,
   else:
     return preprocess_for_eval(image, height, width, test_crop)
 
-def _preprocess(x):
+def _preprocess(x, is_training):
     # print(x['image'])
     # print(type(x['image']))
     # exit()
     x = preprocess_image(
-      x, 224, 224, is_training=False, color_distort=False)
+      x, 224, 224, is_training=is_training)
     return x
 
 

@@ -194,6 +194,7 @@ class SafeDirectoryIterator(SafeIterator):
                  interpolation_order=1,
                  # load in wordvec mtx
                  wordvec_mtx=None,
+                 simclr_augment=False,
                  ):
 
         if color_mode not in {'rgb', 'rgba', 'grayscale'}:
@@ -262,6 +263,7 @@ class SafeDirectoryIterator(SafeIterator):
         self.preprocessing_function = preprocessing_function
         self.dtype = dtype
         self.wordvec_mtx = wordvec_mtx
+        self.simclr_augment = simclr_augment
         if dtype is None:
             self.dtype = K.floatx()
         self.interpolation_order = interpolation_order
@@ -430,7 +432,7 @@ class SafeDirectoryIterator(SafeIterator):
             # _preprocess
             # and then convert back to array
             x = tf.convert_to_tensor(x, dtype=tf.uint8)
-            x = simclr_preprocessing._preprocess(x)
+            x = simclr_preprocessing._preprocess(x, is_training=self.simclr_augment)
             # NOTE(ken) convert back to numpy or not 
             # both work n no influence on training time.
             x = x.numpy()

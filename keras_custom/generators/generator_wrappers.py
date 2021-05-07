@@ -207,6 +207,7 @@ def simclr_gen(directory,
                 preprocessing_function,
                 horizontal_flip,
                 wordvec_mtx,
+                simclr_augment,
                 ):
     """
     Nothing special about this generator,
@@ -232,6 +233,7 @@ def simclr_gen(directory,
                         preprocessing_function=preprocessing_function,
                         horizontal_flip=horizontal_flip,
                         wordvec_mtx=wordvec_mtx,
+                        simclr_augment=simclr_augment,
                         )
 
     steps = bad_generator.compute_step_size()
