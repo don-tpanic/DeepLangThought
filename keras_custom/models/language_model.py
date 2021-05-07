@@ -96,15 +96,14 @@ def lang_model_contrastive(config):
           We use config to modify the setup of the model.
           When config is None, the model is the pretrained SIMCLR itself.
      """    
-     class Model(tf.keras.Model):
+     class LangModel(tf.keras.Model):
           def __init__(self, config):
                """
                Load in the pretrained simclr
                And add the same layers as in previous version.
                """
-               super(Model, self).__init__()
+               super(LangModel, self).__init__()
                self.config = config
-
                if self.config is not None:
                     self.saved_model = tf.saved_model.load(self.config['path'])
 
@@ -116,18 +115,11 @@ def lang_model_contrastive(config):
                                                                  activation='relu',
                                                                  name=f"w2_dense_1")
                     self.semantic_layer = tf.keras.layers.Dense(768, 
-                                                            activation=None,
-                                                            name='semantic_layer')
-                    
-                    # TODO: config['label_type'] == 'fine-grained, num_classes = 1000
+                                                                activation=None,
+                                                                name='semantic_layer')
                     self.classify_layer = tf.keras.layers.Dense(1000, 
-                                                            activation='softmax',
-                                                            name='discrete_layer')
-                    # self.optimizer = LARSOptimizer(
-                    #      learning_rate,
-                    #      momentum=momentum,
-                    #      weight_decay=weight_decay,
-                    #      exclude_from_weight_decay=['batch_normalization', 'bias', 'head_supervised'])
+                                                                activation='softmax',
+                                                                name='discrete_layer')
                else: 
                     self.saved_model = tf.saved_model.load('r50_1x_sk0/saved_model/')
                     
@@ -144,7 +136,7 @@ def lang_model_contrastive(config):
                     semantic_output = self.semantic_layer(x)
                     classify_output = self.classify_layer(semantic_output)
                     return semantic_output, classify_output
-     return Model(config)
+     return LangModel(config)
 
 
 if __name__ == '__main__':
