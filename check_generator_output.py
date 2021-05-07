@@ -16,7 +16,7 @@ Visualize the image output from generators with
     2. Simclr preprocessed output
 """ 
 
-def plot_outputs(generator_list=['lang', 'simclr']):
+def compare_generator_outputs(generator_list=['lang', 'simclr']):
     fig, ax = plt.subplots(1, 2)
 
     for i in range(len(generator_list)):
@@ -52,4 +52,32 @@ def plot_outputs(generator_list=['lang', 'simclr']):
     plt.savefig('check_generator_output.png')
 
 
-plot_outputs()
+def check_simclr_gen_outputs(num_imgs=8):
+    fig, ax = plt.subplots(1, num_imgs)
+
+    gen, steps = simclr_gen(
+        data_directory(part='train'),
+        classes=None,
+        batch_size=num_imgs,
+        seed=42,
+        shuffle=True,
+        subset='validation',
+        validation_split=0.1,
+        class_mode='categorical',
+        target_size=(224, 224),
+        preprocessing_function=None,
+        horizontal_flip=False, 
+        wordvec_mtx=np.load('data_local/imagenet2vec/imagenet2vec_1k.npy'))
+
+    x, y = gen.__getitem__(idx=0)
+
+    for i in range(x.shape[0]):
+        img = x[i]
+        ax[i].imshow(img)
+
+    plt.savefig('simclr_generator_outputs.png')
+
+
+if __name__ == '__main__':
+    # compare_generator_outputs()
+    check_simclr_gen_outputs()
