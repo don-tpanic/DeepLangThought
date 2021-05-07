@@ -443,7 +443,6 @@ class SafeDirectoryIterator(SafeIterator):
                 params = self.get_random_transform(x.shape)
                 x = self.apply_transform(x, params)
                 x = self.standardize(x)
-            np.save('simclr_goinbatch.npy', x)
             batch_x[i] = x
 
         # optionally save augmented images to disk for debugging purposes
