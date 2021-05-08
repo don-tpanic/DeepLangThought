@@ -12,7 +12,7 @@ import tensorflow as tf
 from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.applications.vgg16 import preprocess_input
 
-from keras_custom.models.language_model import lang_model_contrastive
+from keras_custom.models.language_model import lang_model_contrastive, test_training_speed
 from keras_custom.generators.generator_wrappers import simclr_gen, lang_gen, sup_gen
 from TRAIN.utils.data_utils import load_classes, data_directory
 from TRAIN.utils.saving_utils import save_model_weights
@@ -98,13 +98,17 @@ def specific_callbacks(config):
 
 
 def execute():
-    config = load_config('test_v1')
-    model = lang_model_contrastive(config)
-    # model.build((1, 224, 224, 3))
-    # model.summary()
+    config = load_config('test_vgg')
+    model = test_training_speed()
+    # model = lang_model_contrastive(config)
+
+    '''
+    <tensorflow.python.saved_model.load.Loader._recreate_base_user_object.<locals>._UserObject object at 0x7fe5204f0e20>
+    '''
+
     # no simclr layers visible in model.summary()
     # lossWs = [0, 0.1, 1, 2, 3, 5, 7, 10]
-    lossWs = [5]
+    lossWs = [1]
     for lossW in lossWs:
         model.compile(tf.keras.optimizers.Adam(lr=config['lr']),
                     loss=['mse', 'categorical_crossentropy'],

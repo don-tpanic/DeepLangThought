@@ -95,6 +95,20 @@ def lang_model_contrastive(config):
      -----
           We use config to modify the setup of the model.
           When config is None, the model is the pretrained SIMCLR itself.
+
+     Layer (type)                 Output Shape              Param #   
+     =================================================================
+     w2_dense_0 (Dense)           multiple                  8392704   
+     _________________________________________________________________
+     w2_dense_1 (Dense)           multiple                  16781312  
+     _________________________________________________________________
+     semantic_layer (Dense)       multiple                  3146496   
+     _________________________________________________________________
+     discrete_layer (Dense)       multiple                  769000    
+     =================================================================
+     Total params: 29,089,512
+     Trainable params: 29,089,512
+     Non-trainable params: 0
      """    
      class LangModel(tf.keras.Model):
           def __init__(self, config):
@@ -122,12 +136,14 @@ def lang_model_contrastive(config):
                                                                 name='discrete_layer')
                else: 
                     self.saved_model = tf.saved_model.load('r50_1x_sk0/saved_model/')
-                    
+               print(self.saved_model)   
+
           def call(self, inputs):
                """
                Straightforward feedforward net
                """
                simclr_outputs = self.saved_model(inputs, trainable=False)
+               print(simclr_outputs)
                if self.config is None:
                     return simclr_outputs['final_avg_pool']
                else:
@@ -137,6 +153,100 @@ def lang_model_contrastive(config):
                     classify_output = self.classify_layer(semantic_output)
                     return semantic_output, classify_output
      return LangModel(config)
+
+
+def test_training_speed():
+     """
+     Purpose:
+     --------
+          Simclr training is much slower than the original vgg training.
+          Here, we try mimicking subclassed simclr model but using vgg.
+     
+     Impl:
+     -----
+          1. Load vgg and save as .pd
+          2. Build vgg + language model using subclassing.
+          3. Load back into training routine and see training speed.
+     
+     Layer (type)                 Output Shape              Param #   
+     =================================================================
+     model (Functional)           (None, 4096)              134260544 
+     _________________________________________________________________
+     w2_dense_0 (Dense)           multiple                  16781312  
+     _________________________________________________________________
+     w2_dense_1 (Dense)           multiple                  16781312  
+     _________________________________________________________________
+     semantic_layer (Dense)       multiple                  3146496   
+     _________________________________________________________________
+     discrete_layer (Dense)       multiple                  769000    
+     =================================================================
+     Total params: 171,738,664
+     Trainable params: 37,478,120
+     Non-trainable params: 134,260,544
+     """
+     model_path = 'vgg16/saved_model/'
+     if not os.path.exists(model_path):
+          vgg = VGG16(weights='imagenet', include_top=True, input_shape=(224, 224, 3))
+          vgg.load_weights('VGG16_finetuned_fullmodelWeights.h5')
+          print('[Check] Loaded in fine tuned VGG16 weights.')
+          penult_output = vgg.get_layer('fc2').output
+          vgg = Model(inputs=vgg.input, outputs=penult_output)
+          tf.saved_model.save(vgg, model_path)
+          print(f'[Check] Model saved.')
+
+     vgg = VGG16(weights='imagenet', include_top=True, input_shape=(224, 224, 3))
+     vgg.load_weights('VGG16_finetuned_fullmodelWeights.h5')
+     print('[Check] Loaded in fine tuned VGG16 weights.')
+     penult_output = vgg.get_layer('fc2').output
+     vgg = Model(inputs=vgg.input, outputs=penult_output)
+
+     class LangModel(tf.keras.Model):
+          def __init__(self):
+               """
+               Load in the pretrained simclr
+               And add the same layers as in previous version.
+               """
+               super(LangModel, self).__init__()
+               # self.saved_model = tf.saved_model.load(model_path)
+               # self.saved_model = tf.keras.models.load_model(model_path)
+
+               for layer in vgg.layers:
+                    layer.trainable = False
+               self.saved_model = vgg
+
+               
+
+               self.w2_dense0_layer = tf.keras.layers.Dense(4096, 
+                                                            activation='relu',
+                                                            name=f"w2_dense_0")
+               self.w2_dense1_layer = tf.keras.layers.Dense(4096, 
+                                                            activation='relu',
+                                                            name=f"w2_dense_1")
+               self.semantic_layer = tf.keras.layers.Dense(768, 
+                                                       activation=None,
+                                                       name='semantic_layer')
+               self.classify_layer = tf.keras.layers.Dense(1000, 
+                                                       activation='softmax',
+                                                       name='discrete_layer')
+               print(self.saved_model)
+
+          def call(self, inputs):
+               """
+               Straightforward feedforward net
+               """
+               # simclr_outputs = self.saved_model(inputs, trainable=False)
+               simclr_outputs = self.saved_model(inputs)
+
+               print(simclr_outputs)
+
+               # x = self.w2_dense0_layer(simclr_outputs['final_avg_pool'])
+
+               x = self.w2_dense0_layer(simclr_outputs)
+               x = self.w2_dense1_layer(x)
+               semantic_output = self.semantic_layer(x)
+               classify_output = self.classify_layer(semantic_output)
+               return semantic_output, classify_output
+     return LangModel()
 
 
 if __name__ == '__main__':
