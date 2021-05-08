@@ -36,6 +36,19 @@ def lang_model(w2_depth, discrete_frozen=False, num_labels=1000, seed=42):
           trainable_discrete: if discrete layer is trainable or not.
           w2_depth: number of dense layers between FC2 and semantic layer.
           num_labels: label output layer size
+
+
+     w2_dense_0 (Dense)           (None, 4096)              16781312  
+     _________________________________________________________________
+     w2_dense_1 (Dense)           (None, 4096)              16781312  
+     _________________________________________________________________
+     semantic (Dense)             (None, 768)               3146496   
+     _________________________________________________________________
+     discrete (Dense)             (None, 1000)              769000    
+     =================================================================
+     Total params: 171,738,664
+     Trainable params: 37,478,120
+     Non-trainable params: 134,260,544
      """
      vgg = VGG16(weights='imagenet', include_top=True, input_shape=(224, 224, 3))
      vgg.load_weights('VGG16_finetuned_fullmodelWeights.h5')
