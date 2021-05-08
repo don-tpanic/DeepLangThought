@@ -207,7 +207,7 @@ def simclr_gen(directory,
                 preprocessing_function,
                 horizontal_flip,
                 wordvec_mtx,
-                simclr_augment,
+                simclr_augment=False,
                 ):
     """
     Nothing special about this generator,
