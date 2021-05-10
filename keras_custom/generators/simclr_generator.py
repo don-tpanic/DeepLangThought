@@ -5,7 +5,8 @@ import multiprocessing
 from functools import partial
 
 import numpy as np
-import matplotlib
+import matplotlib.pyplot as plt
+from PIL import Image
 from tensorflow.keras import backend as K
 import tensorflow as tf
 from tensorflow.keras.utils import Sequence
@@ -421,21 +422,26 @@ class SafeDirectoryIterator(SafeIterator):
         # self.filepaths is dynamic, is better to call it once outside the loop
         filepaths = self.filepaths
         for i, j in enumerate(index_array):
+
+            # PIL.Image
             img = load_img(filepaths[j],
                            color_mode=self.color_mode,
                            target_size=self.target_size,
                            interpolation=self.interpolation)
+            # ndarray, [1, 255]
             x = img_to_array(img, data_format=self.data_format)
+            x = x / 255.
+
             ### ###
             # NOTE(ken)
             # convert to tensor so can be preprocessed by simclr 
             # _preprocess
             # and then convert back to array
-            x = tf.convert_to_tensor(x, dtype=tf.uint8)
-            x = simclr_preprocessing._preprocess(x, is_training=self.simclr_augment)
+            # x = tf.convert_to_tensor(x, dtype=tf.uint8)
+            # x = simclr_preprocessing._preprocess(x, is_training=self.simclr_augment)
             # NOTE(ken) convert back to numpy or not 
             # both work n no influence on training time.
-            x = x.numpy()
+            # x = x.numpy()
             ### ###
             # Pillow images should be closed after `load_img`,
             # but not PIL images.
