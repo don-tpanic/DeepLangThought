@@ -1,16 +1,54 @@
-import numpy as np
+import os
 import pickle
-
+import numpy as np
 import tensorflow as tf
 from tensorflow.keras.models import Model
 from tensorflow.keras.utils import plot_model
 from tensorflow.keras.applications.vgg16 import VGG16
 
-from keras_custom.models.language_model import lang_model
+from keras_custom.models.language_model import lang_model, lang_model_contrastive
+
 
 """
 Some pre-defined models that are used repeatedly.
 """
+
+# TODO: to be integrated back into old code.
+def ready_model_simclr(config, lossW, intersect_layer='semantic_layer'):
+    """
+    Load in a specified simclr model and intercept activation after the
+    semantic layer.
+    """
+    model = lang_model_contrastive(config)
+    model.build(input_shape=(1,224,224,3))
+    model.summary()
+    w2_depth = config['w2_depth']
+    config_version = config['config_version']
+
+    for i in range(w2_depth):
+        with open(f'_trained_weights/w2_dense_{i}-{config_version}-lossW={lossW}.pkl', 'rb') as f:
+            dense_weights = pickle.load(f)
+            model.get_layer(f'w2_dense_{i}').set_weights([dense_weights[0], dense_weights[1]])
+            print(f'Successfully loading layer weights for [w2_dense_{i}]')
+
+    with open(f'_trained_weights/semantic_weights-{config_version}-lossW={lossW}.pkl', 'rb') as f:
+        semantic_weights = pickle.load(f)
+        model.get_layer('semantic_layer').set_weights([semantic_weights[0], semantic_weights[1]])
+        print(f'Successfully loading layer weights for [semantic]')
+
+    with open(f'_trained_weights/discrete_weights-{config_version}-lossW={lossW}.pkl', 'rb') as f:
+        discrete_weights = pickle.load(f)
+        model.get_layer('discrete_layer').set_weights([discrete_weights[0], discrete_weights[1]])
+        print(f'Successfully loading layer weights for [discrete]')
+    
+    model.compile(tf.keras.optimizers.Adam(lr=config['lr']),
+                    loss=['mse', 'categorical_crossentropy'],
+                    loss_weights=[1, lossW],
+                    metrics=['acc'])
+    
+    return model
+
+
 def ready_model_for_ind_accuracy_eval(w2_depth, run_name, lossW):
     """
     Reconstruct the model for evaluating individual 

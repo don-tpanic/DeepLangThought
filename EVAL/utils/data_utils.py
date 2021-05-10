@@ -1,7 +1,16 @@
+import os
+import yaml
+import socket
 import numpy as np
 import pandas as pd
-import socket
 
+
+def load_config(config_version):
+    with open(os.path.join('configs', f'{config_version}.yaml')) as f:
+        config = yaml.safe_load(f)
+    print(f'[Check] Loading [{config_version}]')
+    return config
+    
 
 def load_classes(num_classes, df='imagenetA'):
     """
