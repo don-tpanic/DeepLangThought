@@ -149,14 +149,14 @@ def lang_model_contrastive(config):
                                                                 name='discrete_layer')
                else: 
                     self.saved_model = tf.saved_model.load('r50_1x_sk0/saved_model/')
-               print(self.saved_model)   
+               # print(self.saved_model)   
 
           def call(self, inputs):
                """
                Straightforward feedforward net
                """
                simclr_outputs = self.saved_model(inputs, trainable=False)
-               print(simclr_outputs)
+               # print(simclr_outputs)
                if self.config is None:
                     return simclr_outputs['final_avg_pool']
                else:
