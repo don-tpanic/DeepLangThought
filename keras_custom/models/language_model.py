@@ -96,7 +96,7 @@ def lang_model(w2_depth, discrete_frozen=False, num_labels=1000, seed=42):
      return model
 
 
-def lang_model_contrastive(config):
+def lang_model_contrastive(config, return_semantic=False):
      """
      Purpose:
      -------- 
@@ -124,13 +124,14 @@ def lang_model_contrastive(config):
      Non-trainable params: 0
      """    
      class LangModel(tf.keras.Model):
-          def __init__(self, config):
+          def __init__(self, config, return_semantic):
                """
                Load in the pretrained simclr
                And add the same layers as in previous version.
                """
                super(LangModel, self).__init__()
                self.config = config
+               self.return_semantic = return_semantic
                if self.config is not None:
                     self.saved_model = tf.saved_model.load(self.config['path'])
 
@@ -143,13 +144,14 @@ def lang_model_contrastive(config):
                                                                  name=f"w2_dense_1")
                     self.semantic_layer = tf.keras.layers.Dense(768, 
                                                                 activation=None,
-                                                                name='semantic_layer')
-                    self.classify_layer = tf.keras.layers.Dense(1000, 
-                                                                activation='softmax',
-                                                                name='discrete_layer')
+                                                                name='semantic_layer')  
+                    # Do not initialise if only need semantic outs.
+                    if self.return_semantic is False:                
+                         self.classify_layer = tf.keras.layers.Dense(1000, 
+                                                                 activation='softmax',
+                                                                 name='discrete_layer')
                else: 
                     self.saved_model = tf.saved_model.load('r50_1x_sk0/saved_model/')
-               # print(self.saved_model)   
 
           def call(self, inputs):
                """
@@ -163,9 +165,17 @@ def lang_model_contrastive(config):
                     x = self.w2_dense0_layer(simclr_outputs['final_avg_pool'])
                     x = self.w2_dense1_layer(x)
                     semantic_output = self.semantic_layer(x)
-                    classify_output = self.classify_layer(semantic_output)
-                    return semantic_output, classify_output
-     return LangModel(config)
+
+                    # We only return semantic output
+                    # when eval trained models
+                    if return_semantic is True:
+                         return semantic_output
+                    # When training full model,  we include the classifier.
+                    else:
+                         classify_output = self.classify_layer(semantic_output)
+                         return semantic_output, classify_output
+
+     return LangModel(config, return_semantic)
 
 
 if __name__ == '__main__':
