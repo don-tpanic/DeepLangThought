@@ -13,7 +13,7 @@ from tensorflow.keras.optimizers import Adam
 
 from keras_custom.models.language_model import lang_model_contrastive
 from keras_custom.generators.generator_wrappers import simclr_gen
-from TRAIN.utils.data_utils import load_classes, data_directory
+from TRAIN.utils.data_utils import load_classes, data_directory, load_config
 
 
 def execute():
