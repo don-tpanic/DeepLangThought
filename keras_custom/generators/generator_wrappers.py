@@ -26,6 +26,7 @@ def simple_generator(directory,
                      preprocessing_function,
                      horizontal_flip,
                      AlexNetAug=False,
+                     simclr_range=False
                      ):
     """
     Nothing special about this generator,
@@ -50,6 +51,7 @@ def simple_generator(directory,
                         target_size=target_size,
                         preprocessing_function=preprocessing_function,
                         horizontal_flip=horizontal_flip,
+                        simclr_range=simclr_range
                         )
 
     steps = bad_generator.compute_step_size()

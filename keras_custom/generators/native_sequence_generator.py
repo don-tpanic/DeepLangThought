@@ -218,6 +218,7 @@ class SafeDirectoryIterator(SafeIterator):
                  preprocessing_function=None,
                  validation_split=0.0,
                  interpolation_order=1,
+                 simclr_range=False
                  ):
 
         if color_mode not in {'rgb', 'rgba', 'grayscale'}:
@@ -290,13 +291,8 @@ class SafeDirectoryIterator(SafeIterator):
         self.rescale = rescale
         self.preprocessing_function = preprocessing_function
         self.dtype = dtype
-
-        # --------------------------------------------------------
-        if dtype is None:
-            self.dtype = K.floatx()
-        # --------------------------------------------------------
-
         self.interpolation_order = interpolation_order
+        self.simclr_range = simclr_range
 
         if data_format not in {'channels_last', 'channels_first'}:
             raise ValueError(
@@ -470,6 +466,10 @@ class SafeDirectoryIterator(SafeIterator):
                 params = self.get_random_transform(x.shape)
                 x = self.apply_transform(x, params)
                 x = self.standardize(x)
+            
+            if self.simclr_range:
+                # print('[Check] simclr_range = True')
+                x = x / 255.
             batch_x[i] = x
 
         # optionally save augmented images to disk for debugging purposes
