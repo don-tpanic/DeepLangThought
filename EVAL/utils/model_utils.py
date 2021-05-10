@@ -14,12 +14,12 @@ Some pre-defined models that are used repeatedly.
 """
 
 # TODO: to be integrated back into old code.
-def ready_model_simclr(config, lossW, intersect_layer='semantic_layer'):
+def ready_model_simclr(config, lossW):
     """
     Load in a specified simclr model and intercept activation after the
     semantic layer.
     """
-    model = lang_model_contrastive(config)
+    model = lang_model_contrastive(config, return_semantic=True)
     model.build(input_shape=(1,224,224,3))
     model.summary()
     w2_depth = config['w2_depth']
@@ -36,16 +36,6 @@ def ready_model_simclr(config, lossW, intersect_layer='semantic_layer'):
         model.get_layer('semantic_layer').set_weights([semantic_weights[0], semantic_weights[1]])
         print(f'Successfully loading layer weights for [semantic]')
 
-    with open(f'_trained_weights/discrete_weights-{config_version}-lossW={lossW}.pkl', 'rb') as f:
-        discrete_weights = pickle.load(f)
-        model.get_layer('discrete_layer').set_weights([discrete_weights[0], discrete_weights[1]])
-        print(f'Successfully loading layer weights for [discrete]')
-    
-    model.compile(tf.keras.optimizers.Adam(lr=config['lr']),
-                    loss=['mse', 'categorical_crossentropy'],
-                    loss_weights=[1, lossW],
-                    metrics=['acc'])
-    
     return model
 
 
