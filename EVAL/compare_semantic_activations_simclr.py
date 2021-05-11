@@ -9,7 +9,7 @@ from sklearn.metrics.pairwise import cosine_similarity, cosine_distances
 import tensorflow as tf
 from tensorflow.keras.applications.vgg16 import preprocess_input
 
-from keras_custom.generators.generator_wrappers import simclr_gen, simple_generator
+from keras_custom.generators.generator_wrappers import data_generator
 from EVAL.utils.data_utils import data_directory, load_classes, load_config
 from EVAL.utils.model_utils import ready_model_simclr
 
@@ -106,7 +106,7 @@ def grab_activations(model, part, config, lossW):
             elif generator_type == 'vgg_coarsegrain':
                 NotImplementedError()
                 
-            gen, steps = simple_generator(
+            gen, steps = data_generator(
                                 directory=directory,
                                 classes=[wnid],
                                 batch_size=128,
@@ -118,7 +118,9 @@ def grab_activations(model, part, config, lossW):
                                 target_size=(224, 224),
                                 preprocessing_function=preprocessing_function,
                                 horizontal_flip=False,
-                                simclr_range=simclr_range)
+                                wordvec_mtx=None,
+                                simclr_range=simclr_range,
+                                simclr_augment=False)
             
 
             # (N, 768)

@@ -20,7 +20,12 @@ def ready_model_simclr(config, lossW):
     semantic layer.
     """
     model = lang_model_contrastive(config, return_semantic=True)
-    model.build(input_shape=(1,224,224,3))
+
+    if config['front_end'] == 'simclr':
+        model.build(input_shape=(1,224,224,3))
+    elif config['front_end'] == 'vgg16':
+        NotImplementedError()
+    
     model.summary()
     w2_depth = config['w2_depth']
     config_version = config['config_version']
