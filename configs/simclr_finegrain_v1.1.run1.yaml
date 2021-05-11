@@ -1,10 +1,11 @@
-config_version: test_v1
-front_end: simclr
+config_version: simclr_finegrain_v1.1.run1
+front_end: 'simclr'
 path: 'r50_1x_sk0/saved_model/'
 w2_depth: 2
 lr: 0.00003
 patience: 5
 batch_size: 128
+epochs: 500
 generator_seed: 42
 validation_split: 0.1
-generator_type: simclr
+generator_type: simclr_finegrain

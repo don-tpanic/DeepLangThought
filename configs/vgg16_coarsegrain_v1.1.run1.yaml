@@ -1,0 +1,9 @@
+config_version: vgg16_coarsegrain_v1.1.run1
+path: 
+w2_depth: 2
+lr: 0.00003
+patience: 5
+batch_size: 128
+generator_seed: 42
+validation_split: 0.1
+generator_type: vgg16_coarsegrain
