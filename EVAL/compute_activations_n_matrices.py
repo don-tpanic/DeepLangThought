@@ -14,50 +14,62 @@ from EVAL.utils.data_utils import data_directory, load_classes, load_config
 from EVAL.utils.model_utils import ready_model_simclr
 
 """
-Use methods such as tNSE or RSA
-    to compare if the labelling effect makes sense.
+Compute class-level semantic activations out of trained models (vgg16 or simclr)
+and compute embedding & cosine distance matrices that are going to be used 
+for further analysis.
 
-To do that we want to grab activations from the semantic layer
-in both the semantic model and the discrete model.
+TODO: grab_activation not working for coarsegrain generators yet.
 """   
 
-def execute(compute_semantic_activation=True,
+def execute(compute_semantic_activation=False,
             compute_distance_matrices=True):
     part = 'val_white'
-    config = load_config('test_v1')
-    config_version = config['config_version']
-    lr = config['lr']
-    w2_depth = config['w2_depth']
-    intersect_layer = 'semantic'
-    fname1 = 'bert'
-    df = None
-    # lossWs = [0, 0.1, 1, 2, 3, 5, 7, 10]
-    lossWs = [1]
+    config = load_config('vgg16_coarsegrain_v1.1.run1')
+    dfs = ['amphibian', 'bird', 'fish', 'primate', 'reptile']
+    lossWs = [0, 0.1, 1, 2, 3, 5, 7, 10]
     # -------------------------------------------
     for lossW in lossWs:
+        
+        if len(dfs) == 0:
+            if compute_semantic_activation:
+            # get trained model intercepted as `semantic_layer`
+                model = ready_model_simclr(config=config, 
+                                            lossW=lossW)
+                grab_activations(model=model, 
+                                part=part, 
+                                config=config,
+                                lossW=lossW)
+            if compute_distance_matrices:
+                embedding_n_distance_matrices(
+                                config=config, 
+                                lossW=lossW,
+                                part=part, 
+                                lang_model=True, 
+                                useVGG=False, 
+                                bert=False)
+        else:
+            original_lossW = lossW
+            for df in dfs:
+                lossW = f'{original_lossW}-sup={df}'
 
-        if df is not None:
-            lossW = f'{lossW}-sup={df}'
-        run_name = f'{config_version}-lossW={lossW}'
+                if compute_semantic_activation:
+                    # get trained model intercepted as `semantic_layer`
+                    model = ready_model_simclr(config=config, 
+                                                lossW=lossW)
 
-        if compute_semantic_activation:
+                    grab_activations(model=model, 
+                                    part=part, 
+                                    config=config,
+                                    lossW=lossW)
 
-            model = ready_model_simclr(config=config, 
-                                       lossW=lossW)
-
-            grab_activations(model=model, 
-                             part=part, 
-                             config=config,
-                             lossW=lossW)
-
-        if compute_distance_matrices:
-            embedding_n_distance_matrices(
-                            config=config, 
-                            lossW=lossW,
-                            part=part, 
-                            lang_model=True, 
-                            useVGG=False, 
-                            bert=False)
+                if compute_distance_matrices:
+                    embedding_n_distance_matrices(
+                                    config=config, 
+                                    lossW=lossW,
+                                    part=part, 
+                                    lang_model=True, 
+                                    useVGG=False, 
+                                    bert=False)
     
 
 def grab_activations(model, part, config, lossW):
@@ -91,19 +103,23 @@ def grab_activations(model, part, config, lossW):
         category = categories[i]
 
         # check if some classes have been computed so can skip
-        save_path = f'RESRC_{part}/_computed_activations/{config_version}/lossW={lossW}'
+        save_path = f'resources_{part}/_computed_activations/{config_version}/lossW={lossW}'
         if not os.path.exists(save_path):
             os.makedirs(save_path)
         
         file2save = os.path.join(save_path, f'{category}.npy')
         if not os.path.exists(file2save):
 
-            if generator_type == 'simclr':
+            if generator_type == 'simclr_finegrain':
                 preprocessing_function = None
                 simclr_range = True
-            elif generator_type == 'vgg_finegrain':
-                NotImplementedError()
-            elif generator_type == 'vgg_coarsegrain':
+            elif generator_type == 'vgg16_finegrain':
+                preprocessing_function = preprocess_input
+                simclr_range = False                
+
+            elif generator_type == 'vgg16_coarsegrain':
+                # TODO. Right now data_generator does not support
+                # coarsegrain at all.
                 NotImplementedError()
                 
             gen, steps = data_generator(
@@ -121,7 +137,6 @@ def grab_activations(model, part, config, lossW):
                                 wordvec_mtx=None,
                                 simclr_range=simclr_range,
                                 simclr_augment=False)
-            
 
             # (N, 768)
             proba = model.predict(gen, steps, verbose=1, workers=3)
@@ -145,7 +160,7 @@ def embedding_n_distance_matrices(config,
     Purpose:
     --------
         Given a model,
-        compute a embedding and a distance matrix for targeted activations.
+        compute an embedding and a distance matrix for targeted activations.
         This is going to save the matrices to make RSA faster.
 
     returns:
@@ -153,7 +168,7 @@ def embedding_n_distance_matrices(config,
         the saved result is the entire distance matrix (symmetric)
         and the embedding matrix
     """
-    config_version = config['version']
+    config_version = config['config_version']
 
     # load bert embedding matrix
     if bert:
@@ -167,24 +182,31 @@ def embedding_n_distance_matrices(config,
 
         for category in categories:
             if useVGG:
-                avg_vec = np.load(f'RESRC_{part}/_computed_activations/block4_pool=vgg16/{category}.npy')
+                avg_vec = np.load(f'resources_{part}/_computed_activations/block4_pool=vgg16/{category}.npy')
                 fname = 'block4_pool'
             elif lang_model:
-                avg_vec = np.load(f'RESRC_{part}/_computed_activations/{version}/lossW={lossW}/{category}.npy')
-                fname = f'{config_version}-lossW={lossW}'
+                avg_vec = np.load(f'resources_{part}/_computed_activations/{config_version}/lossW={lossW}/{category}.npy')
+                fname = f'lossW={lossW}'
             embed_mtx.append(avg_vec)
 
     # first save embedding matrix (N, D)
     X = np.array(embed_mtx)
     print(f'fname={fname}, X.shape = ', X.shape)
-    np.save(f'RESRC_{part}/_embedding_matrices/{fname}.npy', X)
+
+    save_path = f'resources_{part}/_embedding_matrices/{config_version}'
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+    np.save(os.path.join(save_path, f'{fname}.npy'), X)
     print('embedding matrix saved.')
 
     # second save cosine distance matrix (N, N)
     disMtx = cosine_distances(X)
     print(f'fname={fname}, disMtx.shape = ', disMtx.shape)
     # save based on fname
-    np.save(f'RESRC_{part}/_cosine_dist_matrices/{fname}.npy', disMtx)
+    save_path = f'resources_{part}/_cosine_dist_matrices/{config_version}'
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+    np.save(os.path.join(save_path, f'{fname}.npy'), disMtx)
     print('cosine distance matrix saved.')
     
 
