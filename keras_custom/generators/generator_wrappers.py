@@ -1,13 +1,14 @@
 from .labels_corrector import wnids_to_network_indices, indices_rematch
-from . import language_model_generator as langGen
+# from . import language_model_generator as langGen
 from . import superGroupGenerator as supGen
 from . import generator_base
-from . import native_sequence_generator as Gen
+# from . import native_sequence_generator as Gen
 
 """
 Customer generators wrapper for Language model only.
 """
 
+# TODO: to be deprecated, switch to using `data_generator`
 def simple_generator(directory,
                      classes,
                      batch_size,
@@ -68,6 +69,7 @@ def simple_generator(directory,
     return good_generator, steps
 
 
+# TODO: to be deprecated, and switch to using `data_generator`
 def lang_gen(directory,
                 classes,
                 batch_size,
