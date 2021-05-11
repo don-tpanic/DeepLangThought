@@ -24,19 +24,18 @@ def ready_model_simclr(config, lossW):
     if config['front_end'] == 'simclr':
         model.build(input_shape=(1,224,224,3))
     elif config['front_end'] == 'vgg16':
-        NotImplementedError()
+        pass  # nothing needs done.
     
-    model.summary()
     w2_depth = config['w2_depth']
     config_version = config['config_version']
 
     for i in range(w2_depth):
-        with open(f'_trained_weights/w2_dense_{i}-{config_version}-lossW={lossW}.pkl', 'rb') as f:
+        with open(f'_trained_weights/{config_version}/w2_dense_{i}-{config_version}-lossW={lossW}.pkl', 'rb') as f:
             dense_weights = pickle.load(f)
             model.get_layer(f'w2_dense_{i}').set_weights([dense_weights[0], dense_weights[1]])
             print(f'Successfully loading layer weights for [w2_dense_{i}]')
 
-    with open(f'_trained_weights/semantic_weights-{config_version}-lossW={lossW}.pkl', 'rb') as f:
+    with open(f'_trained_weights/{config_version}/semantic_weights-{config_version}-lossW={lossW}.pkl', 'rb') as f:
         semantic_weights = pickle.load(f)
         model.get_layer('semantic_layer').set_weights([semantic_weights[0], semantic_weights[1]])
         print(f'Successfully loading layer weights for [semantic]')
