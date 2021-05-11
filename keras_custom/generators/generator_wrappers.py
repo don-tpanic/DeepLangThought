@@ -1,19 +1,13 @@
-import numpy as np
-import pandas as pd
-
-from tensorflow.keras.applications.vgg16 import preprocess_input
 from .labels_corrector import wnids_to_network_indices, indices_rematch
 from . import language_model_generator as langGen
 from . import superGroupGenerator as supGen
-from . import simclr_generator as simGen
-
-"""
-Customer generator wrapper for Language model only.
-"""
+from . import generator_base
 from . import native_sequence_generator as Gen
 
-#
-### This is for fine tune VGG16 using Sequence
+"""
+Customer generators wrapper for Language model only.
+"""
+
 def simple_generator(directory,
                      classes,
                      batch_size,
@@ -26,8 +20,7 @@ def simple_generator(directory,
                      preprocessing_function,
                      horizontal_flip,
                      AlexNetAug=False,
-                     simclr_range=False
-                     ):
+                     simclr_range=False):
     """
     Nothing special about this generator,
     i.e. no branches, no pseudo input, no momentum
@@ -197,23 +190,43 @@ def sup_gen(directory,
     return good_generator, steps
 
 
-def simclr_gen(directory,
-                classes,
-                batch_size,
-                seed,
-                shuffle,
-                subset,
-                validation_split,
-                class_mode,
-                target_size,
-                preprocessing_function,
-                horizontal_flip,
-                wordvec_mtx,
-                simclr_augment=False,
-                ):
+def data_generator(directory,
+                 classes,
+                 batch_size,
+                 seed,
+                 shuffle,
+                 subset,
+                 validation_split,
+                 class_mode,
+                 target_size,
+                 preprocessing_function,
+                 horizontal_flip,
+                 wordvec_mtx,
+                 simclr_range=False,
+                 simclr_augment=False):
     """
-    Nothing special about this generator,
-    i.e. no branches, no pseudo input, no momentum
+    Purpose:
+    --------
+        This generator now supports:
+
+        1. VGG-front-end finegrain training
+            - preprocessing_function='vgg'
+            - wordvec_mtx is not None
+            - simclr_range is False
+            - simclr_augment is False
+
+        2. SimClr-front-end finegrain training
+            - preprocessing_function='none'
+            - wordvec_mtx is not None
+            - simclr_range is True ([0,1])
+            - simclr_augment is False
+
+        3. Semantic output intercept after training
+            1) vgg-front-end
+                - wordvec_mtx is None
+            2) simclr-front-end
+                - wordvec_mtx is None
+
     """
     if classes == None:
         pass
@@ -221,8 +234,7 @@ def simclr_gen(directory,
         sorted_classes = sorted(classes)
 
     # the initial generator
-    # using Sequence
-    bad_generator = simGen.SafeDirectoryIterator(
+    bad_generator = generator_base.DirectoryIterator(
                         directory=directory,
                         classes=classes,
                         batch_size=batch_size,
@@ -235,9 +247,8 @@ def simclr_gen(directory,
                         preprocessing_function=preprocessing_function,
                         horizontal_flip=horizontal_flip,
                         wordvec_mtx=wordvec_mtx,
-                        simclr_augment=simclr_augment,
-                        )
-
+                        simclr_range=simclr_range,
+                        simclr_augment=simclr_augment)
     steps = bad_generator.compute_step_size()
 
     # label correction

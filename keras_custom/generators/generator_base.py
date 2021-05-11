@@ -26,10 +26,10 @@ space, so we have to do two conversions:
     2. convert the preprocessed version back to ndarray so the model can work with it.
 """
 
-class SafeIterator(Sequence):
+class Iterator(Sequence):
     """
-        An iterator inherits the keras.utils.Sequence as recommended for
-        multiprocessing safety
+    An iterator inherits the keras.utils.Sequence as recommended for
+    multiprocessing safety
     """
     white_list_formats = ('png', 'jpg', 'jpeg', 'bmp', 'ppm', 'tif', 'tiff')
 
@@ -43,8 +43,9 @@ class SafeIterator(Sequence):
         self.lock = threading.Lock()
         self.index_array = None
         self.index_generator = self._flow_index()
-        self.wordvec_mtx = wordvec_mtx  ###
-    ############################################################################
+        # custom stuff
+        self.wordvec_mtx = wordvec_mtx
+
     def _set_index_array(self):
         self.index_array = np.arange(self.n)
         if self.shuffle:
@@ -56,16 +57,6 @@ class SafeIterator(Sequence):
         len_of_index_array = len(self.index_array)
         step_size = np.ceil(len_of_index_array / self.batch_size)
         return step_size
-
-    def get_epoch_labels(self):
-        # WARNING: may not be accurate due to separetly calling `_set_index_array`
-        # WARNING: will result in changing the index array due to random choice.
-        # original labels for all before subsample
-        all_labels = self._classes
-        if self.index_array is None:
-            self._set_index_array()
-        epoch_labels = all_labels[self.index_array]
-        return epoch_labels
 
     def __getitem__(self, idx):
         if idx >= len(self):
@@ -80,7 +71,7 @@ class SafeIterator(Sequence):
             self._set_index_array()
         index_array = self.index_array[self.batch_size * idx:
                                        self.batch_size * (idx + 1)]
-        # REVIEW: wordvec_mtx: must do self. otherwise undefined because of __getitem__
+        # NOTE(ken): wordvec_mtx: must do self. otherwise undefined due to __getitem__
         return self._get_batches_of_transformed_samples(index_array, self.wordvec_mtx)
 
     def __len__(self):
@@ -93,7 +84,7 @@ class SafeIterator(Sequence):
         self.batch_index = 0
 
     def _flow_index(self):
-        print('****** _flow_index never called.')
+        print(f'[Check] _flow_index')
         self.reset()
         while 1:
             if self.seed is not None:
@@ -126,10 +117,8 @@ class SafeIterator(Sequence):
         # Returns
             The next batch.
         """
-        print('next is never called.')
-
+        print(f'[Check] next')
         with self.lock:
-
             index_array = next(self.index_generator)
         # The transformation of images is not under thread lock
         # so it can be done in parallel
@@ -142,22 +131,20 @@ class SafeIterator(Sequence):
         # Returns
             A batch of transformed samples.
         """
-        print('_get_batches_of_transformed_samples called.')
         raise NotImplementedError
 
 
-class SafeDirectoryIterator(SafeIterator):
+class DirectoryIterator(Iterator):
     """
-        Custom DirectoryIterator work with CustomIterator
-        (flow_from_directory uses this class, where flow_from_directory is
-        a function under class ImageDataGenerator)
+    Custom DirectoryIterator work with CustomIterator
+    (flow_from_directory uses this class, where flow_from_directory is
+    a function under class ImageDataGenerator)
     """
     allowed_class_modes = {'categorical', 'binary', 'sparse', 'input', None}
 
     def __init__(self,
                  directory,
-                 # image_data_generator,
-                 target_size=(256, 256),
+                 target_size=(224, 224),
                  color_mode='rgb',
                  classes=None,
                  class_mode='categorical',
@@ -171,30 +158,17 @@ class SafeDirectoryIterator(SafeIterator):
                  follow_links=False,
                  subset=None,
                  interpolation='nearest',
-                 dtype=None,  # WARNING:  original is 32
-                 featurewise_center=False,
-                 samplewise_center=False,
-                 featurewise_std_normalization=False,
-                 samplewise_std_normalization=False,
-                 zca_whitening=False,
-                 zca_epsilon=1e-6,
-                 rotation_range=0,
-                 width_shift_range=0.,
-                 height_shift_range=0.,
-                 brightness_range=None,
-                 shear_range=0.,
-                 zoom_range=0.,
-                 channel_shift_range=0.,
+                 dtype=None,
                  fill_mode='nearest',
                  cval=0.,
                  horizontal_flip=False,
                  vertical_flip=False,
-                 rescale=None,
                  preprocessing_function=None,
                  validation_split=0.0,
                  interpolation_order=1,
                  # load in wordvec mtx
                  wordvec_mtx=None,
+                 simclr_range=False,
                  simclr_augment=False,
                  ):
 
@@ -227,7 +201,6 @@ class SafeDirectoryIterator(SafeIterator):
         self.save_format = save_format
         self.interpolation = interpolation
         self.validation_split = validation_split
-
         self.directory = directory
 
         if subset is not None:
@@ -242,40 +215,24 @@ class SafeDirectoryIterator(SafeIterator):
                     'expected "training" or "validation"' % (subset,))
         else:
             split = None
+
         self.split = split
         self.subset = subset
-        self.featurewise_center = featurewise_center
-        self.samplewise_center = samplewise_center
-        self.featurewise_std_normalization = featurewise_std_normalization
-        self.samplewise_std_normalization = samplewise_std_normalization
-        self.zca_whitening = zca_whitening
-        self.zca_epsilon = zca_epsilon
-        self.rotation_range = rotation_range
-        self.width_shift_range = width_shift_range
-        self.height_shift_range = height_shift_range
-        self.shear_range = shear_range
-        self.zoom_range = zoom_range
-        self.channel_shift_range = channel_shift_range
         self.fill_mode = fill_mode
         self.cval = cval
         self.horizontal_flip = horizontal_flip
         self.vertical_flip = vertical_flip
-        self.rescale = rescale
         self.preprocessing_function = preprocessing_function
         self.dtype = dtype
         self.wordvec_mtx = wordvec_mtx
+        self.simclr_range = simclr_range
         self.simclr_augment = simclr_augment
+
         if dtype is None:
             self.dtype = K.floatx()
         self.interpolation_order = interpolation_order
-
-        if data_format not in {'channels_last', 'channels_first'}:
-            raise ValueError(
-                '`data_format` should be `"channels_last"` '
-                '(channel after row and column) or '
-                '`"channels_first"` (channel before row and column). '
-                'Received: %s' % data_format)
         self.data_format = data_format
+        
         if data_format == 'channels_first':
             self.channel_axis = 1
             self.row_axis = 2
@@ -290,58 +247,10 @@ class SafeDirectoryIterator(SafeIterator):
                 ' Received: %s' % validation_split)
         self.validation_split = validation_split
 
-        self.mean = None
-        self.std = None
-        self.principal_components = None
-
-        if np.isscalar(zoom_range):
-            self.zoom_range = [1 - zoom_range, 1 + zoom_range]
-        elif len(zoom_range) == 2:
-            self.zoom_range = [zoom_range[0], zoom_range[1]]
-        else:
-            raise ValueError('`zoom_range` should be a float or '
-                             'a tuple or list of two floats. '
-                             'Received: %s' % (zoom_range,))
-        if zca_whitening:
-            if not featurewise_center:
-                self.featurewise_center = True
-                warnings.warn('This ImageDataGenerator specifies '
-                              '`zca_whitening`, which overrides '
-                              'setting of `featurewise_center`.')
-            if featurewise_std_normalization:
-                self.featurewise_std_normalization = False
-                warnings.warn('This ImageDataGenerator specifies '
-                              '`zca_whitening` '
-                              'which overrides setting of'
-                              '`featurewise_std_normalization`.')
-        if featurewise_std_normalization:
-            if not featurewise_center:
-                self.featurewise_center = True
-                warnings.warn('This ImageDataGenerator specifies '
-                              '`featurewise_std_normalization`, '
-                              'which overrides setting of '
-                              '`featurewise_center`.')
-        if samplewise_std_normalization:
-            if not samplewise_center:
-                self.samplewise_center = True
-                warnings.warn('This ImageDataGenerator specifies '
-                              '`samplewise_std_normalization`, '
-                              'which overrides setting of '
-                              '`samplewise_center`.')
-        if brightness_range is not None:
-            if (not isinstance(brightness_range, (tuple, list)) or
-                    len(brightness_range) != 2):
-                raise ValueError(
-                    '`brightness_range should be tuple or list of two floats. '
-                    'Received: %s' % (brightness_range,))
-        self.brightness_range = brightness_range
-
         if class_mode not in self.allowed_class_modes:
             raise ValueError('Invalid class_mode: {}; expected one of: {}'
                              .format(class_mode, self.allowed_class_modes))
         self.class_mode = class_mode
-        self.dtype = dtype
-
         # First, count the number of samples and classes.
         self.samples = 0
 
@@ -390,12 +299,11 @@ class SafeDirectoryIterator(SafeIterator):
             os.path.join(self.directory, fname) for fname in self.filenames
         ]
 
-        super(SafeDirectoryIterator, self).__init__(self.samples,
-                                                    batch_size,
-                                                    shuffle,
-                                                    seed,
-                                                    wordvec_mtx
-                                                    )
+        super(DirectoryIterator, self).__init__(self.samples,
+                                                batch_size,
+                                                shuffle,
+                                                seed,
+                                                wordvec_mtx)
 
     @property
     def filepaths(self):
@@ -430,9 +338,9 @@ class SafeDirectoryIterator(SafeIterator):
                            interpolation=self.interpolation)
             # ndarray, [1, 255]
             x = img_to_array(img, data_format=self.data_format)
-            x = x / 255.
 
             ### ###
+            # WARNING: For now stop using this, simply use x/255. for simclr.
             # NOTE(ken)
             # convert to tensor so can be preprocessed by simclr 
             # _preprocess
@@ -443,6 +351,7 @@ class SafeDirectoryIterator(SafeIterator):
             # both work n no influence on training time.
             # x = x.numpy()
             ### ###
+
             # Pillow images should be closed after `load_img`,
             # but not PIL images.
             if hasattr(img, 'close'):
@@ -451,6 +360,9 @@ class SafeDirectoryIterator(SafeIterator):
                 params = self.get_random_transform(x.shape)
                 x = self.apply_transform(x, params)
                 x = self.standardize(x)
+            
+            if self.simclr_range:
+                x = x / 255.
             batch_x[i] = x
 
         # optionally save augmented images to disk for debugging purposes
@@ -482,9 +394,12 @@ class SafeDirectoryIterator(SafeIterator):
         else:
             return batch_x
         
-        ### Use Nick's trick to index word vectors ### 
-        batch_y = [np.dot(batch_y, wordvec_mtx), batch_y]
-        ###
+        # NOTE(ken): Nick's trick to get semantic targets 
+        # if mtx is not provided, we return only the usual labels.
+        if wordvec_mtx is not None:
+            batch_y = [np.dot(batch_y, wordvec_mtx), batch_y]
+        ### ###
+
         if self.sample_weight is None:
             return batch_x, batch_y
         else:
@@ -505,40 +420,6 @@ class SafeDirectoryIterator(SafeIterator):
         """
         if self.preprocessing_function:
             x = self.preprocessing_function(x)
-        if self.rescale:
-            x *= self.rescale
-        if self.samplewise_center:
-            x -= np.mean(x, keepdims=True)
-        if self.samplewise_std_normalization:
-            x /= (np.std(x, keepdims=True) + 1e-6)
-
-        if self.featurewise_center:
-            if self.mean is not None:
-                x -= self.mean
-            else:
-                warnings.warn('This ImageDataGenerator specifies '
-                              '`featurewise_center`, but it hasn\'t '
-                              'been fit on any training data. Fit it '
-                              'first by calling `.fit(numpy_data)`.')
-        if self.featurewise_std_normalization:
-            if self.std is not None:
-                x /= (self.std + 1e-6)
-            else:
-                warnings.warn('This ImageDataGenerator specifies '
-                              '`featurewise_std_normalization`, '
-                              'but it hasn\'t '
-                              'been fit on any training data. Fit it '
-                              'first by calling `.fit(numpy_data)`.')
-        if self.zca_whitening:
-            if self.principal_components is not None:
-                flatx = np.reshape(x, (-1, np.prod(x.shape[-3:])))
-                whitex = np.dot(flatx, self.principal_components)
-                x = np.reshape(whitex, x.shape)
-            else:
-                warnings.warn('This ImageDataGenerator specifies '
-                              '`zca_whitening`, but it hasn\'t '
-                              'been fit on any training data. Fit it '
-                              'first by calling `.fit(numpy_data)`.')
         return x
 
     def get_random_transform(self, img_shape, seed=None):
@@ -557,75 +438,11 @@ class SafeDirectoryIterator(SafeIterator):
         if seed is not None:
             np.random.seed(seed)
 
-        if self.rotation_range:
-            theta = np.random.uniform(
-                -self.rotation_range,
-                self.rotation_range)
-        else:
-            theta = 0
-
-        if self.height_shift_range:
-            try:  # 1-D array-like or int
-                tx = np.random.choice(self.height_shift_range)
-                tx *= np.random.choice([-1, 1])
-            except ValueError:  # floating point
-                tx = np.random.uniform(-self.height_shift_range,
-                                       self.height_shift_range)
-            if np.max(self.height_shift_range) < 1:
-                tx *= img_shape[img_row_axis]
-        else:
-            tx = 0
-
-        if self.width_shift_range:
-            try:  # 1-D array-like or int
-                ty = np.random.choice(self.width_shift_range)
-                ty *= np.random.choice([-1, 1])
-            except ValueError:  # floating point
-                ty = np.random.uniform(-self.width_shift_range,
-                                       self.width_shift_range)
-            if np.max(self.width_shift_range) < 1:
-                ty *= img_shape[img_col_axis]
-        else:
-            ty = 0
-
-        if self.shear_range:
-            shear = np.random.uniform(
-                -self.shear_range,
-                self.shear_range)
-        else:
-            shear = 0
-
-        if self.zoom_range[0] == 1 and self.zoom_range[1] == 1:
-            zx, zy = 1, 1
-        else:
-            zx, zy = np.random.uniform(
-                self.zoom_range[0],
-                self.zoom_range[1],
-                2)
-
         flip_horizontal = (np.random.random() < 0.5) * self.horizontal_flip
         flip_vertical = (np.random.random() < 0.5) * self.vertical_flip
 
-        channel_shift_intensity = None
-        if self.channel_shift_range != 0:
-            channel_shift_intensity = np.random.uniform(-self.channel_shift_range,
-                                                        self.channel_shift_range)
-
-        brightness = None
-        if self.brightness_range is not None:
-            brightness = np.random.uniform(self.brightness_range[0],
-                                           self.brightness_range[1])
-
-        transform_parameters = {'theta': theta,
-                                'tx': tx,
-                                'ty': ty,
-                                'shear': shear,
-                                'zx': zx,
-                                'zy': zy,
-                                'flip_horizontal': flip_horizontal,
+        transform_parameters = {'flip_horizontal': flip_horizontal,
                                 'flip_vertical': flip_vertical,
-                                'channel_shift_intensity': channel_shift_intensity,
-                                'brightness': brightness,
                                 }
         return transform_parameters
 
@@ -668,19 +485,11 @@ class SafeDirectoryIterator(SafeIterator):
                                    cval=self.cval,
                                    order=self.interpolation_order)
 
-        if transform_parameters.get('channel_shift_intensity') is not None:
-            x = apply_channel_shift(x,
-                                    transform_parameters['channel_shift_intensity'],
-                                    img_channel_axis)
-
         if transform_parameters.get('flip_horizontal', False):
             x = flip_axis(x, img_col_axis)
 
         if transform_parameters.get('flip_vertical', False):
             x = flip_axis(x, img_row_axis)
-
-        if transform_parameters.get('brightness') is not None:
-            x = apply_brightness_shift(x, transform_parameters['brightness'])
 
         return x
 
