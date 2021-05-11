@@ -195,6 +195,7 @@ def lang_model_contrastive(config, return_semantic=False):
      elif config['front_end'] == 'vgg16':
 
           w2_depth = config['w2_depth']
+          seed = 42
 
           vgg = VGG16(weights='imagenet', include_top=True, input_shape=(224, 224, 3))
           vgg.load_weights('VGG16_finetuned_fullmodelWeights.h5')
@@ -220,7 +221,7 @@ def lang_model_contrastive(config, return_semantic=False):
                     kernel_initializer=keras.initializers.glorot_normal(seed=seed))(x)
 
           # 768 * 1000 + 1000 = 769000
-          discrete_output = Dense(num_labels, activation='softmax', name='discrete_layer',
+          discrete_output = Dense(1000, activation='softmax', name='discrete_layer',
                     kernel_initializer=keras.initializers.glorot_normal(seed=seed))(semantic_output)
           model = Model(inputs=vgg.input, outputs=[semantic_output, discrete_output])
           model.summary()
