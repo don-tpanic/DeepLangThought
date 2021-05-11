@@ -1,8 +1,4 @@
 import os
-os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '1'
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-
 import numpy as np
 import pandas as pd
 import pickle
@@ -14,9 +10,8 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.applications.vgg16 import preprocess_input
 from tensorflow.keras.callbacks import TensorBoard, EarlyStopping
 
-from keras_custom.callbacks import LangTotalLoss
 from keras_custom.models.language_model import lang_model
-from keras_custom.generators.generator_wrappers import lang_gen
+from keras_custom.generators.generator_wrappers import data_generator
 from TRAIN.utils.data_utils import load_classes, data_directory
 
 """
@@ -34,7 +29,7 @@ def train_n_val_data_gen(subset, bert_random):
         wordvec_mtx = np.load('data_local/imagenet2vec/imagenet2vec_1k_random98.npy')
         print('Using random BERT 98...\n')
         
-    gen, steps = lang_gen(
+    gen, steps = data_generator(
                         directory=directory,
                         classes=None,
                         batch_size=128,
@@ -42,11 +37,13 @@ def train_n_val_data_gen(subset, bert_random):
                         shuffle=True,
                         subset=subset,
                         validation_split=0.1,
-                        class_mode='categorical',  # only used for lang due to BERT indexing
+                        class_mode='categorical',  # for BERT indexing
                         target_size=(224, 224),
                         preprocessing_function=preprocess_input,
                         horizontal_flip=True, 
-                        wordvec_mtx=wordvec_mtx)
+                        wordvec_mtx=wordvec_mtx, 
+                        simclr_range=False,
+                        simclr_augment=False)
     return gen, steps
 
 
