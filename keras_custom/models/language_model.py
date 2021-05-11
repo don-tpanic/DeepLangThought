@@ -100,7 +100,7 @@ def lang_model_contrastive(config, return_semantic=False):
      """
      Purpose:
      -------- 
-          This model uses pretrained simclr as front end.
+          This model uses pretrained vgg16 or simclr as front end.
           And follows with semantic layers, prediction layer as
           the same as the previous model.
 
@@ -220,10 +220,15 @@ def lang_model_contrastive(config, return_semantic=False):
           semantic_output = Dense(768, activation=None, name='semantic_layer',
                     kernel_initializer=keras.initializers.glorot_normal(seed=seed))(x)
 
-          # 768 * 1000 + 1000 = 769000
-          discrete_output = Dense(1000, activation='softmax', name='discrete_layer',
-                    kernel_initializer=keras.initializers.glorot_normal(seed=seed))(semantic_output)
-          model = Model(inputs=vgg.input, outputs=[semantic_output, discrete_output])
+          # if return semantics, we intercept at semantic layer
+          if return_semantic is True:
+               model = Model(inputs=vgg.input, outputs=semantic_output)
+          # if False, we have two outputs.
+          else:
+               # 768 * 1000 + 1000 = 769000
+               discrete_output = Dense(1000, activation='softmax', name='discrete_layer',
+                         kernel_initializer=keras.initializers.glorot_normal(seed=seed))(semantic_output)
+               model = Model(inputs=vgg.input, outputs=[semantic_output, discrete_output])
           model.summary()
           #plot_model(model, to_file='lang_model.png')
           return model
