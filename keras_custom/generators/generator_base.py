@@ -345,8 +345,10 @@ class DirectoryIterator(Iterator):
             # convert to tensor so can be preprocessed by simclr 
             # _preprocess
             # and then convert back to array
-            # x = tf.convert_to_tensor(x, dtype=tf.uint8)
-            # x = simclr_preprocessing._preprocess(x, is_training=self.simclr_augment)
+            if self.simclr_range:
+                # x = x / 255.
+                x = tf.convert_to_tensor(x, dtype=tf.uint8)
+                x = simclr_preprocessing._preprocess(x, is_training=self.simclr_augment)
             # NOTE(ken) convert back to numpy or not 
             # both work n no influence on training time.
             # x = x.numpy()
@@ -360,9 +362,6 @@ class DirectoryIterator(Iterator):
                 params = self.get_random_transform(x.shape)
                 x = self.apply_transform(x, params)
                 x = self.standardize(x)
-            
-            if self.simclr_range:
-                x = x / 255.
             batch_x[i] = x
 
         # optionally save augmented images to disk for debugging purposes

@@ -1,4 +1,4 @@
-config_version: simclr_finegrain_v1.1.run1
+config_version: simclr_finegrain_v2.1.run1
 front_end: 'simclr'
 path: 'r50_1x_sk0/saved_model/'
 w2_depth: 2
@@ -9,5 +9,4 @@ epochs: 500
 generator_seed: 42
 validation_split: 0.1
 
-# image preprocessing is simply x/255.
-# not using the native simclr _preprocess.
+# image preprocessing is the native simclr _preprocess.
