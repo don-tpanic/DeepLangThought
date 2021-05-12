@@ -15,6 +15,10 @@ parser.add_argument('-f', '--frontend', dest='frontend')
 parser.add_argument('-v', '--version', dest='version')
 args = parser.parse_args()
 
+'''
+Example command:
+    python META_train -l finegrain -f simclr -v v1.1.run1 
+'''
 
 if __name__ == '__main__':
 

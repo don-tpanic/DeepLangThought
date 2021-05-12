@@ -10,7 +10,7 @@ import tensorflow as tf
 from tensorflow.keras.applications.vgg16 import preprocess_input
 
 from keras_custom.generators.generator_wrappers import data_generator
-from EVAL.utils.data_utils import data_directory, load_classes, load_config
+from EVAL.utils.data_utils import data_directory, load_classes
 from EVAL.utils.model_utils import ready_model_simclr
 
 """
@@ -21,12 +21,13 @@ for further analysis.
 TODO: grab_activation not working for coarsegrain generators yet.
 """   
 
-def execute(compute_semantic_activation=False,
+def execute(config,
+            compute_semantic_activation=True,
             compute_distance_matrices=True):
     part = 'val_white'
-    config = load_config('vgg16_coarsegrain_v1.1.run1')
-    dfs = ['amphibian', 'bird', 'fish', 'primate', 'reptile']
-    lossWs = [0, 0.1, 1, 2, 3, 5, 7, 10]
+    # dfs = ['amphibian', 'bird', 'fish', 'primate', 'reptile']
+    dfs = []
+    lossWs = [0.1, 1, 2, 3, 5, 7, 10]
     # -------------------------------------------
     for lossW in lossWs:
         
@@ -113,6 +114,7 @@ def grab_activations(model, part, config, lossW):
             if generator_type == 'simclr_finegrain':
                 preprocessing_function = None
                 simclr_range = True
+
             elif generator_type == 'vgg16_finegrain':
                 preprocessing_function = preprocess_input
                 simclr_range = False                
