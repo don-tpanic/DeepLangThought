@@ -61,8 +61,7 @@ def train_n_val_data_gen(config, subset, bert_random=False, generator_type='simc
     return gen, steps
 
 
-def execute():
-    config = load_config('vgg16_finegrain_v1.1.run1')
+def execute(config):
     model = lang_model_contrastive(config)
     lossWs = [0, 0.1, 1, 2, 3, 5, 7, 10]
     for lossW in lossWs:

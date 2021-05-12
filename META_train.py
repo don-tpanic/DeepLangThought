@@ -1,20 +1,30 @@
+import os
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ["CUDA_VISIBLE_DEVICES"]= '0'
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
 import argparse
-from TRAIN import train_language_model
 from TRAIN import train_language_modelWithSuperGroups
 from TRAIN import train
+from TRAIN.utils.data_utils import load_config
 
 
 parser = argparse.ArgumentParser()
-parser.add_argument('--option', dest='run')
+parser.add_argument('-l', '--label', dest='label')
+parser.add_argument('-f', '--frontend', dest='frontend')
+parser.add_argument('-v', '--version', dest='version')
 args = parser.parse_args()
 
 
 if __name__ == '__main__':
-    if args.run == 'finegrain':
-        train_language_model.execute()
-    elif args.run == 'coarsegrain':
-        train_language_modelWithSuperGroups.execute()
 
-    # TODO: test 
-    elif args.run == 'test':
-        train.execute()
+    config_version = f'{args.frontend}_{args.label}_{args.version}'
+    config = load_config(config_version)
+    train.execute(config)
+
+    # if args.label == 'finegrain':
+    #     config = load_config('simclr_finegrain_v1.1.run1')
+    #     train.execute(config)
+
+    # elif args.run == 'coarsegrain':
+    #     train_language_modelWithSuperGroups.execute()
