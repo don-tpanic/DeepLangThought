@@ -8,6 +8,7 @@ batch_size: 128
 epochs: 500
 generator_seed: 42
 validation_split: 0.1
+generator_type: simclr_finegrain
 
 # image preprocessing is simply x/255.
 # not using the native simclr _preprocess.
