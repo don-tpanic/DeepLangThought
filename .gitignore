@@ -9,6 +9,8 @@ _trained_weights/
 r50*/
 vgg16/
 vscode/
+resources_val_white/_embedding_matrices
+resources_val_white/_cosine_dist_matrices
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
