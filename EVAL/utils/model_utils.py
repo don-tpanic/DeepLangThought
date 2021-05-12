@@ -21,6 +21,7 @@ def ready_model_simclr(config, lossW):
     """
     model = lang_model_contrastive(config, return_semantic=True)
 
+    print(f'[Check] front_end=', config['front_end'])
     if config['front_end'] == 'simclr':
         model.build(input_shape=(1,224,224,3))
     elif config['front_end'] == 'vgg16':
