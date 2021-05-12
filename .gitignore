@@ -11,6 +11,7 @@ vgg16/
 vscode/
 resources_val_white/_embedding_matrices
 resources_val_white/_cosine_dist_matrices
+resources_val_white/_L2_matrices
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
