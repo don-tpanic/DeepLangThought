@@ -4,11 +4,10 @@ os.environ["CUDA_VISIBLE_DEVICES"]= '0'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import argparse
-# from EVAL import compare_semantic_activations
 from EVAL import compute_activations_n_matrices
-# from EVAL import results_vis
 from EVAL.utils.data_utils import load_config
 from EVAL import check_trained_simclr_acc
+from EVAL import results_vis
 
 
 def str2bool(v):
@@ -34,6 +33,7 @@ parser.add_argument('-v', '--version', dest='version')
 parser.add_argument('-s', '--semantics', dest='semantics', type=str2bool)
 parser.add_argument('-m', '--matrices', dest='matrices', type=str2bool)
 parser.add_argument('-a', '--accuracy', dest='accuracy', type=str2bool)
+parser.add_argument('-p', '--plot', dest='plot', type=str2bool)
 args = parser.parse_args()
 
 '''
@@ -56,6 +56,10 @@ if __name__ == '__main__':
     elif args.accuracy is True:
         print(f'**** Computing trained model accuracy ****')
         check_trained_simclr_acc.execute(config)
+    
+    elif args.plot is True:
+        print(f'**** Plotting all final results ****')
+        results_vis.execute(config)
 
 
 

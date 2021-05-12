@@ -6,78 +6,72 @@ from scipy.spatial import distance_matrix
 from scipy.stats import spearmanr
 from sklearn.metrics.pairwise import cosine_similarity
 from matplotlib import rc
-rc('text', usetex=True)
-plt.rcParams.update({'font.size': 20})
-
-import tensorflow as tf
-from tensorflow.keras.applications.vgg16 import preprocess_input
-
-from keras_custom.generators.generator_wrappers import lang_gen, simple_generator
 from EVAL.utils.data_utils import data_directory, load_classes
 from EVAL.utils.model_utils import ready_model
 
 """
 Plotting final results from all evaluations done in
-`compare_semantic_activations.py`
+`compute_activations_n_matrices.py`
 
 Note there is absolutely no evaluations done in this
 script, all processing related to versions of the models
 are done already. All plotting functions are model-agnostic.
 """
 
-def Exp1_AB(lossWs, mtx_type='cosine_dist', part='val_white', version='11-11-20', sup=None):
-    """
-    Plot two figures as subplots of one.
-    """
+# rc('text', usetex=True)
+plt.rcParams.update({'font.size': 20})
 
+
+
+def Exp1_AB(config, lossWs, results_path, part='val_white', sup=None):
+    """
+    Finegrain experiment figures.
+    """
     ##### A ######
-    print(f'mtx type = {mtx_type}')
-
-    true_bert = np.load(f'RESRC_{part}/_{mtx_type}_matrices/bert.npy')
+    config_version = config['config_version']
+    true_bert = np.load(f'resources_{part}/_cosine_dist_matrices/bert.npy')
     correlations = []
     fig, ax = plt.subplots(1, 2, figsize=(15,6))
     for lossW in lossWs:
         if sup is None:
-            inferred = np.load(f'RESRC_{part}/_{mtx_type}_matrices/version={version}-lossW={lossW}.npy')
+            inferred = np.load(f'resources_{part}/_cosine_dist_matrices/{config_version}/lossW={lossW}.npy')
         else:
-            inferred = np.load(f'RESRC_{part}/_{mtx_type}_matrices/version={version}-lossW={lossW}-sup={sup}.npy')
+            inferred = np.load(f'resources_{part}/_cosine_dist_matrices/{config_version}/lossW={lossW}-sup={sup}.npy')
         assert true_bert.shape == inferred.shape
 
-        if mtx_type in ['distance', 'cosine_sim', 'cosine_dist']:
-            uptri1 = true_bert[np.triu_indices(true_bert.shape[0])]
-            uptri2 = inferred[np.triu_indices(inferred.shape[0])]
-            print('uptri spearman', spearmanr(uptri1, uptri2))
-            correlations.append(spearmanr(uptri1, uptri2)[0])
+        uptri1 = true_bert[np.triu_indices(true_bert.shape[0])]
+        uptri2 = inferred[np.triu_indices(inferred.shape[0])]
+        print(spearmanr(uptri1, uptri2))
+        correlations.append(spearmanr(uptri1, uptri2)[0])
     
     ax[0].scatter(np.arange(len(lossWs)), correlations)
     ax[0].set_xticks(np.arange(len(lossWs)))
     ax[0].set_xticklabels(lossWs)
-    ax[0].set_xlabel(r'Labelling pressure ($\beta$)')
+    # ax[0].set_xlabel(r'Labelling pressure ($\beta$)')
     ax[0].set_ylabel('Spearman correlations')
     ax[0].set_title('(A)')
     ax[0].grid(True)
 
     ###### B ######
-
     wnids, indices, categories = load_classes(num_classes=1000, df='ranked')
     all_uptris = []
     for i in range(len(lossWs)):
         lossW = lossWs[i]
-        distMtx = np.load(f'RESRC_{part}/_distance_matrices/version={version}-lossW={lossW}.npy')      
+        distMtx = np.load(f'resources_{part}/_L2_matrices/{config_version}/lossW={lossW}.npy')      
         subMtx = distMtx[indices, :][:, indices]
         subMtx_uptri = subMtx[np.triu_indices(subMtx.shape[0])]
 
         all_uptris.append(subMtx_uptri)
 
     violinplot(data=all_uptris, cut=-5, linewidth=.8, gridsize=300)
-    ax[1].set_xlabel(r'Labelling pressure ($\beta$)')
+    # ax[1].set_xlabel(r'Labelling pressure ($\beta$)')
     ax[1].set_xticks(np.arange(len(lossWs)))
     ax[1].set_xticklabels(lossWs)
     ax[1].set_ylabel('Pairwise class distance')
     ax[1].set_title('(B)')
     plt.tight_layout()
-    plt.savefig('RESULTS/submission/Exp1_AB.pdf')
-    print('plotted.')
+    plt.savefig(os.path.join(results_path, 'Exp1_AB.pdf'))
+    print('[Check] Plotted at:', os.path.join(results_path, 'Exp1_AB.pdf'))
 
 
 def Exp2_AB(lossWs, mtx_type='cosine_dist', part='val_white', version='11-11-20'):
@@ -185,15 +179,21 @@ def Exp2_AB(lossWs, mtx_type='cosine_dist', part='val_white', version='11-11-20'
     ax[1].set_xticklabels(lossWs)
     plt.tight_layout()
     plt.legend()
-    plt.savefig('RESULTS/submission/Exp2_AB.pdf')
-    print('plotted.')
+    plt.savefig(os.path.join(results_path, 'Exp2_AB.pdf'))
+    print('[Check] Plotted at:', os.path.join(results_path, 'Exp2_AB.pdf'))
 
 
-def execute():
+def execute(config):
     lossWs = [0, 0.1, 1, 2, 3, 5, 7, 10]
-    
-    Exp1_AB(lossWs)
-    Exp2_AB(lossWs)
+
+    config_version = config['config_version']
+    results_path = f'RESULTS/revision_1/{config_version}'
+    if not os.path.exists(results_path):
+        os.makedirs(results_path)
+    Exp1_AB(config, lossWs, results_path)
+
+    # TODO. Update when trainer is ready.
+    # Exp2_AB(lossWs)
     
 
 
