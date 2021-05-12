@@ -3,8 +3,8 @@ import numpy as np
 import matplotlib.pyplot as plt
 from seaborn import violinplot
 from scipy.spatial import distance_matrix
-from scipy.stats import spearmanr, pearsonr
-from sklearn.metrics.pairwise import cosine_similarity, cosine_distances
+from scipy.stats import spearmanr
+from sklearn.metrics.pairwise import cosine_distances
 
 import tensorflow as tf
 from tensorflow.keras.applications.vgg16 import preprocess_input
@@ -27,7 +27,7 @@ def execute(config,
     part = 'val_white'
     # dfs = ['amphibian', 'bird', 'fish', 'primate', 'reptile']
     dfs = []
-    lossWs = [0.1, 1, 2, 3, 5, 7, 10]
+    lossWs = [0, 0.1, 1, 2, 3, 5, 7, 10]
     # -------------------------------------------
     for lossW in lossWs:
         
@@ -199,7 +199,7 @@ def embedding_n_distance_matrices(config,
     if not os.path.exists(save_path):
         os.makedirs(save_path)
     np.save(os.path.join(save_path, f'{fname}.npy'), X)
-    print('embedding matrix saved.')
+    print('embedding matrix saved.\n\n')
 
     # second save cosine distance matrix (N, N)
     disMtx = cosine_distances(X)
@@ -209,6 +209,15 @@ def embedding_n_distance_matrices(config,
     if not os.path.exists(save_path):
         os.makedirs(save_path)
     np.save(os.path.join(save_path, f'{fname}.npy'), disMtx)
-    print('cosine distance matrix saved.')
-    
+    print('cosine distance matrix saved.\n\n')
+
+    # third save L2 distance matrix (N, N)
+    disMtx = distance_matrix(X, X)
+    print(f'fname={fname}, disMtx.shape = ', disMtx.shape)
+    # save based on fname
+    save_path = f'resources_{part}/_L2_matrices/{config_version}'
+    if not os.path.exists(save_path):
+        os.makedirs(save_path)
+    np.save(os.path.join(save_path, f'{fname}.npy'), disMtx)
+    print('L2 distance matrix saved.\n\n')    
 
