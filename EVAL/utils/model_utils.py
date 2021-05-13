@@ -13,13 +13,13 @@ from keras_custom.models.language_model import lang_model, lang_model_contrastiv
 Some pre-defined models that are used repeatedly.
 """
 
-# TODO: to be integrated back into old code.
-def ready_model_simclr(config, lossW):
+# TODO. rename
+def ready_model_simclr(config, lossW, return_semantic=True):
     """
     Load in a specified simclr model and intercept activation after the
     semantic layer.
     """
-    model = lang_model_contrastive(config, return_semantic=True)
+    model = lang_model_contrastive(config, return_semantic=return_semantic)
 
     print(f'[Check] front_end=', config['front_end'])
     if config['front_end'] == 'simclr':
@@ -30,6 +30,8 @@ def ready_model_simclr(config, lossW):
     w2_depth = config['w2_depth']
     config_version = config['config_version']
 
+    # only to produce output at semantic layer.
+    # so we load weights only until semantic layer.
     for i in range(w2_depth):
         with open(f'_trained_weights/{config_version}/w2_dense_{i}-{config_version}-lossW={lossW}.pkl', 'rb') as f:
             dense_weights = pickle.load(f)
@@ -40,8 +42,15 @@ def ready_model_simclr(config, lossW):
         semantic_weights = pickle.load(f)
         model.get_layer('semantic_layer').set_weights([semantic_weights[0], semantic_weights[1]])
         print(f'Successfully loading layer weights for [semantic]')
-
-    return model
+    # load all trained weights including the final discrete layer.
+    if return_semantic is True:
+        return model
+    else:
+        with open(f'_trained_weights/{config_version}/discrete_weights-{config_version}-lossW={lossW}.pkl', 'rb') as f:
+            discrete_weights = pickle.load(f)
+            model.get_layer('discrete_layer').set_weights([discrete_weights[0], discrete_weights[1]])
+            print(f'Loaded layer weights for [discrete]')
+        return model
 
 
 def ready_model_for_ind_accuracy_eval(w2_depth, run_name, lossW):
@@ -94,6 +103,7 @@ def ready_model_for_ind_accuracy_eval(w2_depth, run_name, lossW):
     return model
 
 
+# To be deprecated.
 def ready_model(w2_depth, run_name, lossW, intersect_layer):
     """
     Load in a specified model and intersect the activation after the 
