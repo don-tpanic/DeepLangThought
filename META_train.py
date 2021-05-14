@@ -1,6 +1,6 @@
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '0'
+os.environ["CUDA_VISIBLE_DEVICES"]= '3'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import argparse
@@ -17,11 +17,10 @@ args = parser.parse_args()
 
 '''
 Example command:
-    python META_train -l finegrain -f simclr -v v1.1.run1 
+    python META_train.py -l finegrain -f simclr -v v1.1.run1 
 '''
 
 if __name__ == '__main__':
-
     config_version = f'{args.frontend}_{args.label}_{args.version}'
     config = load_config(config_version)
     train.execute(config)
