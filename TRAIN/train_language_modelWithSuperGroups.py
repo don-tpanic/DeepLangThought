@@ -4,10 +4,6 @@ with similar classes grouped into ONE group
 when training the discrete term.
 """
 import os
-os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '1'
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
-
 import numpy as np
 import pandas as pd
 import pickle
@@ -19,7 +15,6 @@ from tensorflow.keras.optimizers import Adam
 from tensorflow.keras.applications.vgg16 import preprocess_input
 from tensorflow.keras.callbacks import TensorBoard, EarlyStopping
 
-from keras_custom.callbacks import LangTotalLoss
 from keras_custom.models.language_model import lang_model
 from keras_custom.generators.generator_wrappers import sup_gen
 from TRAIN.utils.data_utils import load_classes, data_directory
