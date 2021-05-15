@@ -11,7 +11,7 @@ from tensorflow.keras.applications.vgg16 import preprocess_input
 
 from keras_custom.generators.generator_wrappers import data_generator
 from EVAL.utils.data_utils import data_directory, load_classes
-from EVAL.utils.model_utils import ready_model_simclr
+from EVAL.utils.model_utils import ready_model
 
 """
 Compute class-level semantic activations out of trained models (vgg16 or simclr)
@@ -34,8 +34,8 @@ def execute(config,
         if len(dfs) == 0:
             if compute_semantic_activation:
             # get trained model intercepted as `semantic_layer`
-                model = ready_model_simclr(config=config, 
-                                            lossW=lossW)
+                model = ready_model(config=config, 
+                                    lossW=lossW)
                 grab_activations(model=model, 
                                 part=part, 
                                 config=config,
