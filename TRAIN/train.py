@@ -78,10 +78,8 @@ def train_n_val_data_gen(config, subset, bert_random=False, generator_type='simc
 
 def execute(config):
     model = lang_model_contrastive(config)
-    # lossWs = [0, 0.1, 1, 2, 3, 5, 7, 10]
-    # superordinates = ['']
-    lossWs = [15, 9]
-    superordinates = ['canidae', 'reptile']
+    lossWs = [0, 0.1, 1, 2, 3, 5, 7, 10]
+    superordinates = [None]
     if 'finegrain' in config['config_version'] and len(superordinates) > 1:
         print(f'Error')
         exit()
