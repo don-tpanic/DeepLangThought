@@ -138,6 +138,15 @@ def lang_model_contrastive(config, return_semantic=False):
           Non-trainable params: 134,260,544
      """    
      if config['front_end'] == 'simclr':
+          
+          seed = config['kernel_seed']
+          if config['kernel_initializer'] == 'glorot_normal':
+               kernel_initializer = tf.keras.initializers.glorot_normal(seed=seed)
+          # prior v2.2.run1 (we used glorot uniform with no seed, which is tf default)
+          else:
+               kernel_initializer = tf.keras.initializers.glorot_uniform()
+          print(f'[Check] kernel initializer = ', config['kernel_initializer'])
+
           class LangModel(tf.keras.Model):
                def __init__(self, config, return_semantic):
                     """
@@ -153,18 +162,22 @@ def lang_model_contrastive(config, return_semantic=False):
                          # TODO: hardcoded, better way to do this?
                          self.w2_dense0_layer = tf.keras.layers.Dense(4096, 
                                                                       activation='relu',
-                                                                      name=f"w2_dense_0")
+                                                                      name=f"w2_dense_0",
+                                                                      kernel_initializer=kernel_initializer)
                          self.w2_dense1_layer = tf.keras.layers.Dense(4096, 
                                                                       activation='relu',
-                                                                      name=f"w2_dense_1")
+                                                                      name=f"w2_dense_1",
+                                                                      kernel_initializer=kernel_initializer)
                          self.semantic_layer = tf.keras.layers.Dense(768, 
                                                                  activation=None,
-                                                                 name='semantic_layer')  
+                                                                 name='semantic_layer',
+                                                                 kernel_initializer=kernel_initializer)  
                          # Do not initialise if only need semantic outs.
                          if self.return_semantic is False:                
                               self.classify_layer = tf.keras.layers.Dense(1000, 
                                                                       activation='softmax',
-                                                                      name='discrete_layer')
+                                                                      name='discrete_layer',
+                                                                      kernel_initializer=kernel_initializer)
                     else: 
                          self.saved_model = tf.saved_model.load('r50_1x_sk0/saved_model/')
 
