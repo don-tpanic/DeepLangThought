@@ -13,11 +13,58 @@ Create tfrecords for all Imagenet (train & val_white)
 associated simclr final outputs.
 """
 
+def prepare_dataset(part='val_white'):
+    
+    test_dir = f'simclr_reprs/{part}/n01440764'
+
+    # TEMP
+    filepaths = [os.path.join(test_dir, fname) for fname in os.listdir(test_dir)]
+    # print(filepaths)
+    dataset_x = tf.data.Dataset.from_tensor_slices(filepaths)
+
+    def read_tfrecord(serialized_example):
+        """
+
+        inputs:
+        -------
+            serialized_example: a *.tfrecords file
+        """
+        feature_description = {
+            'x': tf.io.FixedLenFeature((), tf.string),
+            'x_length': tf.io.FixedLenFeature((), tf.int64),
+            'word_emb': tf.io.FixedLenFeature((), tf.string),
+            'word_emb_length': tf.io.FixedLenFeature((), tf.int64),
+            'label': tf.io.FixedLenFeature((), tf.string),
+            'label_length': tf.io.FixedLenFeature((), tf.int64)
+        }
+        example = tf.io.parse_single_example(serialized_example, feature_description)
+        
+        # x
+        x = tf.io.parse_tensor(example['x'], out_type=float)
+        x_length = [example['x_length']]
+        x = tf.reshape(x, x_length)
+
+        # semantic vector
+        word_emb = tf.io.parse_tensor(example['word_emb'], out_type=float)
+        word_emb_length = [example['word_emb_length']]
+        word_emb = tf.reshape(word_emb, word_emb_length)  # reshape, so shape becomes known.
+
+        # one hot label
+        label = tf.io.parse_tensor(example['label'], out_type=tf.int64)
+        label_length = [example['label_length']]
+        label = tf.reshape(label, label_length)
+        return x, word_emb, label
+
+
+    dataset_x = dataset_x.interleave(tf.data.TFRecordDataset)
+    return dataset_x.map(read_tfrecord)
+
+
 def create_tfrecords():
     top_path = 'simclr_reprs/'
     model = load_model()
     wordvec_mtx = np.load('data_local/imagenet2vec/imagenet2vec_1k.npy')
-    parts = ['train', 'val_white']
+    parts = ['val_white', 'train']
 
     for part in parts:
         directory = data_directory(part=part)
@@ -31,6 +78,7 @@ def create_tfrecords():
                                    part, 
                                    wnid, 
                                    label)
+            exit()
 
 
 def create_single_tfrecord(model, 
@@ -75,15 +123,16 @@ def create_single_tfrecord(model,
                 x = tf.convert_to_tensor(x, dtype=tf.uint8)
                 x = simclr_preprocessing._preprocess(x, is_training=False)
                 x = tf.reshape(x, [1, x.shape[0], x.shape[1], x.shape[2]])
-                outs = model.predict(x)
-                outs_bytes = tf.io.serialize_tensor(outs)
-                image_shape = x.shape
-                word_emb_bytes = tf.io.serialize_tensor(word_emb)
-                
+                x = model.predict(x)[0]  # otherwise len(x)=1
+
                 # serialize and save this record.
-                example = serialize_example(outs_bytes, label, image_shape, word_emb_bytes)
+                example = serialize_example(x=tf.io.serialize_tensor(x), 
+                                            x_length=len(x), 
+                                            word_emb=tf.io.serialize_tensor(word_emb), 
+                                            word_emb_length=len(word_emb), 
+                                            label=tf.io.serialize_tensor(one_hot_label),
+                                            label_length=len(one_hot_label))
                 writer.write(example)
-                exit()
 
 
 def load_model():
@@ -122,14 +171,16 @@ def _int64_feature(value):
   return tf.train.Feature(int64_list=tf.train.Int64List(value=[value]))
 
 
-def serialize_example(image, label, image_shape, word_emb):
+def serialize_example(x, x_length, 
+                      word_emb, word_emb_length, 
+                      label, label_length):
     feature = {
-        'image': _bytes_feature(image),
-        'label': _int64_feature(label),
-        'height': _int64_feature(image_shape[0]),
-        'width': _int64_feature(image_shape[1]),
-        'depth': _int64_feature(image_shape[2]),
-        'word_emb': _bytes_feature(word_emb)
+        'x': _bytes_feature(x),
+        'x_length': _int64_feature(x_length),
+        'word_emb': _bytes_feature(word_emb),
+        'word_emb_length': _int64_feature(word_emb_length),
+        'label': _bytes_feature(label),
+        'label_length': _int64_feature(label_length)
     }
     #  Create a Features message using tf.train.Example.
     example_proto = tf.train.Example(features=tf.train.Features(feature=feature))
@@ -137,4 +188,8 @@ def serialize_example(image, label, image_shape, word_emb):
 
 
 if __name__ == '__main__':
-    create_tfrecords()
+    # create_tfrecords()
+    dataset = prepare_dataset().batch(8)
+    for i in dataset:
+        print(i)
+        exit()
