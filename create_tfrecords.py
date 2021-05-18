@@ -9,62 +9,16 @@ from TRAIN.utils.data_utils import data_directory, load_classes
 from keras_custom.generators import simclr_preprocessing
 
 """
-Create tfrecords for all Imagenet (train & val_white)
-associated simclr final outputs.
+Create all Imageget's simclr outputs as .tfrecord
+
+# TODO. Do we need word_emb for val_white?
 """
-
-def prepare_dataset(part='val_white'):
-    
-    test_dir = f'simclr_reprs/{part}/n01440764'
-
-    # TEMP
-    filepaths = [os.path.join(test_dir, fname) for fname in os.listdir(test_dir)]
-    # print(filepaths)
-    dataset_x = tf.data.Dataset.from_tensor_slices(filepaths)
-
-    def read_tfrecord(serialized_example):
-        """
-
-        inputs:
-        -------
-            serialized_example: a *.tfrecords file
-        """
-        feature_description = {
-            'x': tf.io.FixedLenFeature((), tf.string),
-            'x_length': tf.io.FixedLenFeature((), tf.int64),
-            'word_emb': tf.io.FixedLenFeature((), tf.string),
-            'word_emb_length': tf.io.FixedLenFeature((), tf.int64),
-            'label': tf.io.FixedLenFeature((), tf.string),
-            'label_length': tf.io.FixedLenFeature((), tf.int64)
-        }
-        example = tf.io.parse_single_example(serialized_example, feature_description)
-        
-        # x
-        x = tf.io.parse_tensor(example['x'], out_type=float)
-        x_length = [example['x_length']]
-        x = tf.reshape(x, x_length)
-
-        # semantic vector
-        word_emb = tf.io.parse_tensor(example['word_emb'], out_type=float)
-        word_emb_length = [example['word_emb_length']]
-        word_emb = tf.reshape(word_emb, word_emb_length)  # reshape, so shape becomes known.
-
-        # one hot label
-        label = tf.io.parse_tensor(example['label'], out_type=tf.int64)
-        label_length = [example['label_length']]
-        label = tf.reshape(label, label_length)
-        return x, word_emb, label
-
-
-    dataset_x = dataset_x.interleave(tf.data.TFRecordDataset)
-    return dataset_x.map(read_tfrecord)
-
 
 def create_tfrecords():
     top_path = 'simclr_reprs/'
     model = load_model()
     wordvec_mtx = np.load('data_local/imagenet2vec/imagenet2vec_1k.npy')
-    parts = ['val_white', 'train']
+    parts = ['val_white']
 
     for part in parts:
         directory = data_directory(part=part)
@@ -78,7 +32,7 @@ def create_tfrecords():
                                    part, 
                                    wnid, 
                                    label)
-            exit()
+            print(f'[Check] created tfrecords for {wnid}')
 
 
 def create_single_tfrecord(model, 
@@ -136,6 +90,11 @@ def create_single_tfrecord(model,
 
 
 def load_model():
+    """
+    Purpose:
+    --------
+        Load the pretrained simclr model at `final_avg_pool` layer.
+    """
     class SimclrFrontEnd(tf.keras.Model):
         def __init__(self):
             """
@@ -189,7 +148,3 @@ def serialize_example(x, x_length,
 
 if __name__ == '__main__':
     create_tfrecords()
-    # dataset = prepare_dataset().batch(8)
-    # for i in dataset:
-    #     print(i)
-    #     exit()
