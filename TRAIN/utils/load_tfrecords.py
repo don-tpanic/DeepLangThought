@@ -1,12 +1,12 @@
 import os
-os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '1'
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+# os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+# os.environ["CUDA_VISIBLE_DEVICES"]= '1'
+# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np 
 import tensorflow as tf
 from functools import partial
-from iterate_tfrecords import DirectoryIterator
+from . import iterate_tfrecords 
 
 """
 Data loading script using tfrecords.
@@ -41,7 +41,7 @@ def prepare_dataset(part='val_white',
         sup: one of the superordinates / None
     """
     # load data iterator
-    dataset_iterator = DirectoryIterator(
+    dataset_iterator = iterate_tfrecords.DirectoryIterator(
                                 directory=f'simclr_reprs/{part}',
                                 classes=None,
                                 subset=subset,

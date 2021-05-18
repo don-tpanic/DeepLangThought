@@ -18,7 +18,7 @@ def create_tfrecords():
     top_path = 'simclr_reprs/'
     model = load_model()
     wordvec_mtx = np.load('data_local/imagenet2vec/imagenet2vec_1k.npy')
-    parts = ['val_white']
+    parts = ['val_white', 'train']
 
     for part in parts:
         directory = data_directory(part=part)
