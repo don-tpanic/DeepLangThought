@@ -1,7 +1,7 @@
 import os
-os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '1'
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+# os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+# os.environ["CUDA_VISIBLE_DEVICES"]= '1'
+# os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import copy
 import warnings
@@ -13,14 +13,11 @@ from TRAIN.utils.data_utils import load_classes
 
 
 class DirectoryIterator(object):
-    """
-    """
     white_list_formats = {'tfrecords'}
 
     def __init__(self,
                  directory,
                  classes=None,
-                 shuffle=False,
                  seed=42,
                  follow_links=False,
                  subset='validation',
@@ -95,9 +92,79 @@ class DirectoryIterator(object):
 
         pool.close()
         pool.join()
+        # Until this point, everthing is default.
+        # Now if we aim for coarsegrain training,
+        # We need to set up a different mapping `class_indices_sup`
+        #######################################################################################
+        # HACK: modify class_indices to have super groups
+        # and then we will have to keep track of both the native class labels 
+        # and the hacked superGroup labels.
+        print(f'[Check] sup is [{sup}]')
+        if sup is None:
+            # It can really be anything, but has to be defined
+            # otherwise, it will fail check later when setting up batch_y
+            self.class_indices_sup = None
+        else:
+            self.class_indices_sup = copy.deepcopy(self.class_indices)
+            sup_wnids, sup_indices, sup_descriptions = load_classes(num_classes=999, df=sup)
+            print(f'[Check] sup set size = {len(sup_wnids)}')
+            for wnid in self.class_indices:
+                # NOTE(ken): here which label we set to depends on
+                # if we fine tune the VGG output or not.
+                # if finetune, we could set the label to be the last index
+                # if not, we could set the label to be the first dog's index.
+                if wnid in sup_wnids:
+                    # now all dogs are swapped with the same label
+                    self.class_indices_sup[wnid] = sup_indices[0]
+            #print(self.class_indices)
+            #print(self.class_indices_sup)
+
+            # HACK: we continue the hack here by creating on parallel all examples indices 
+            # that is according to the class_indices_sup, basically we repeat the above process
+            # but using `class_indices_sup`
+            
+            # NOTE: classes overloaded, at this point, classes are already overidden.
+            # Thus, here if we use all 1k classes, we can just redo what has been done above.
+            classes = []
+            for subdir in sorted(os.listdir(directory)):
+                if os.path.isdir(os.path.join(directory, subdir)):
+                    # classes here is a list of all wnids
+                    classes.append(subdir)
+
+            pool = multiprocessing.pool.ThreadPool()
+            # Second, build an index of the images
+            # in the different class subfolders.
+            results = []
+            self.filenames = []
+            i = 0
+            for dirpath in (os.path.join(directory, subdir) for subdir in classes):
+                results.append(
+                    pool.apply_async(_list_valid_filenames_in_directory,
+                                    (dirpath, self.white_list_formats, self.split,
+                                    self.class_indices_sup, follow_links)))
+            classes_list = []
+            for res in results:
+                classes, filenames = res.get()
+                classes_list.append(classes)
+                self.filenames += filenames
+            self.samples = len(self.filenames)
+            self.classes_sup = np.zeros((self.samples,), dtype='int32')
+            # now the self.classes is a list of integer class indices
+            for classes in classes_list:
+                self.classes_sup[i:i + len(classes)] = classes
+                i += len(classes)
+
+            print('CHECK: before subsample, total images [%d] from [%d] classes' %
+                (self.samples, self.num_classes))
+
+            pool.close()
+            pool.join()
+        # The hack until this point.
+        #######################################################################################
         self._filepaths = [
             os.path.join(self.directory, fname) for fname in self.filenames
         ]
+
 
     @property
     def filepaths(self):
@@ -166,9 +233,3 @@ def _iter_valid_files(directory, white_list_formats, follow_links):
                                   'Please verify your output.')
                 if fname.lower().endswith('.' + extension):
                     yield root, fname
-
-
-iterator = DirectoryIterator(directory='simclr_reprs/val_white')
-filepaths = iterator._filepaths
-classes = iterator.classes
-print(classes)
