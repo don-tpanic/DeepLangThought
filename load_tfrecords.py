@@ -5,7 +5,7 @@ os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import numpy as np 
 import tensorflow as tf
-
+from functools import partial
 from iterate_tfrecords import DirectoryIterator
 
 """
@@ -18,6 +18,7 @@ We should be able to:
         - needs to have shuffling
     3. Finegrain vs coarse labels need to be added correctly.
 """
+
 
 def prepare_dataset(part='val_white'):
     """
@@ -33,25 +34,54 @@ def prepare_dataset(part='val_white'):
 
     # TODO: need to have train/val split.
     # TODO: in iterator, add sup choice so labels returned are sup.
+    # can shuffle out here
 
-    dataset_x_n_semantics = tf.data.Dataset.from_tensor_slices(filepaths)
-    dataset_x_n_semantics = dataset_x_n_semantics.interleave(tf.data.TFRecordDataset)
+    # x
+    temp = tf.data.Dataset.from_tensor_slices(filepaths)
+    temp = temp.interleave(tf.data.TFRecordDataset)
+    dataset_x = temp.map(partial(parse_tfrecord, 'x'))
 
-    # returns dataset that can be trained on.
-    # in other words, all files need to be loaded prior 
-    # this point.
-    return dataset_x_n_semantics.map(read_tfrecord)
+    # semantics
+    dataset_s = temp.map(partial(parse_tfrecord, 'word_emb'))
+
+    # labels
+    dataset_y = tf.data.Dataset.from_tensor_slices(labels)
+
+    # For targets, we zip (semantics, labels)
+    dataset_target = tf.data.Dataset.zip((dataset_s, dataset_y))
+
+    # For entire, we zip (x, targets)
+    dataset = tf.data.Dataset.zip((dataset_x, dataset_target))
+
+    return dataset
 
 
-def read_tfrecord(serialized_example):
+def parse_tfrecord(component, serialized_example):
     """
     Purpose:
     --------
-        Given one image's 
+        Given one image's
 
     inputs:
     -------
         serialized_example: a *.tfrecords file
+        component: x or word_emb or label, once is it set,
+                   we only return Dataset made of one component,
+                   not all.
+
+    # NOTE: one trick we apply here is to have one extra argument
+            `component` which is not in regular parser. This is for 
+            us to extract only partial content later as we want.
+            The reason is because, when we parse all components at 
+            once, we do not get to control the structure of the Dataset
+            output. 
+
+            e.g. if we parse all, each output from Dataset looks like 
+            (x, word_emb, y) whereas we want (x, (word_emb, y)). So 
+            the trick is to parse x and word_emb separately, and we 
+            manually zip them into the right structure. 
+
+            For actual usage, see `prepare_dataset`.
     """
     feature_description = {
         'x': tf.io.FixedLenFeature((), tf.string),
@@ -64,28 +94,25 @@ def read_tfrecord(serialized_example):
     example = tf.io.parse_single_example(serialized_example, feature_description)
     
     # x
-    x = tf.io.parse_tensor(example['x'], out_type=float)
-    x_length = [example['x_length']]
-    x = tf.reshape(x, x_length)
+    if component == 'x':
+        x = tf.io.parse_tensor(example['x'], out_type=float)
+        x_length = [example['x_length']]
+        x = tf.reshape(x, x_length)
+        return x
 
     # semantic vector
-    word_emb = tf.io.parse_tensor(example['word_emb'], out_type=float)
-    word_emb_length = [example['word_emb_length']]
-    word_emb = tf.reshape(word_emb, word_emb_length)  # reshape, so shape becomes known.
+    elif component == 'word_emb':
+        word_emb = tf.io.parse_tensor(example['word_emb'], out_type=float)
+        word_emb_length = [example['word_emb_length']]
+        word_emb = tf.reshape(word_emb, word_emb_length)  # reshape, so shape becomes known.
+        return word_emb
 
     # one hot label
-    label = tf.io.parse_tensor(example['label'], out_type=tf.int64)
-    label_length = [example['label_length']]
-    label = tf.reshape(label, label_length)
-    return x, word_emb, label
-
-
-
-
-
-
-
-
+    elif component == 'label':
+        label = tf.io.parse_tensor(example['label'], out_type=tf.int64)
+        label_length = [example['label_length']]
+        label = tf.reshape(label, label_length)
+        return label
 
 
 if __name__ == '__main__':
