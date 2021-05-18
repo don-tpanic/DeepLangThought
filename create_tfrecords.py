@@ -81,11 +81,9 @@ def create_single_tfrecord(model,
 
                 # serialize and save this record.
                 example = serialize_example(x=tf.io.serialize_tensor(x), 
-                                            x_length=len(x), 
+                                            x_length=len(x),
                                             word_emb=tf.io.serialize_tensor(word_emb), 
-                                            word_emb_length=len(word_emb), 
-                                            label=tf.io.serialize_tensor(one_hot_label),
-                                            label_length=len(one_hot_label))
+                                            word_emb_length=len(word_emb))
                 writer.write(example)
 
 
@@ -131,15 +129,12 @@ def _int64_feature(value):
 
 
 def serialize_example(x, x_length, 
-                      word_emb, word_emb_length, 
-                      label, label_length):
+                      word_emb, word_emb_length):
     feature = {
         'x': _bytes_feature(x),
         'x_length': _int64_feature(x_length),
         'word_emb': _bytes_feature(word_emb),
-        'word_emb_length': _int64_feature(word_emb_length),
-        'label': _bytes_feature(label),
-        'label_length': _int64_feature(label_length)
+        'word_emb_length': _int64_feature(word_emb_length)
     }
     #  Create a Features message using tf.train.Example.
     example_proto = tf.train.Example(features=tf.train.Features(feature=feature))

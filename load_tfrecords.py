@@ -19,7 +19,6 @@ We should be able to:
     3. Finegrain vs coarse labels need to be added correctly.
 """
 
-
 def prepare_dataset(part='val_white'):
     """
     Purpose:
@@ -68,28 +67,27 @@ def parse_tfrecord(component, serialized_example):
         component: x or word_emb or label, once is it set,
                    we only return Dataset made of one component,
                    not all.
+    # NOTE: 
+    -------
+        one trick we apply here is to have one extra argument
+        `component` which is not in regular parser. This is for 
+        us to extract only partial content later as we want.
+        The reason is because, when we parse all components at 
+        once, we do not get to control the structure of the Dataset
+        output. 
 
-    # NOTE: one trick we apply here is to have one extra argument
-            `component` which is not in regular parser. This is for 
-            us to extract only partial content later as we want.
-            The reason is because, when we parse all components at 
-            once, we do not get to control the structure of the Dataset
-            output. 
+        e.g. if we parse all, each output from Dataset looks like 
+        (x, word_emb, y) whereas we want (x, (word_emb, y)). So 
+        the trick is to parse x and word_emb separately, and we 
+        manually zip them into the right structure. 
 
-            e.g. if we parse all, each output from Dataset looks like 
-            (x, word_emb, y) whereas we want (x, (word_emb, y)). So 
-            the trick is to parse x and word_emb separately, and we 
-            manually zip them into the right structure. 
-
-            For actual usage, see `prepare_dataset`.
+        For actual usage, see `prepare_dataset`.
     """
     feature_description = {
         'x': tf.io.FixedLenFeature((), tf.string),
         'x_length': tf.io.FixedLenFeature((), tf.int64),
         'word_emb': tf.io.FixedLenFeature((), tf.string),
-        'word_emb_length': tf.io.FixedLenFeature((), tf.int64),
-        'label': tf.io.FixedLenFeature((), tf.string),
-        'label_length': tf.io.FixedLenFeature((), tf.int64)
+        'word_emb_length': tf.io.FixedLenFeature((), tf.int64)
     }
     example = tf.io.parse_single_example(serialized_example, feature_description)
     
@@ -106,13 +104,6 @@ def parse_tfrecord(component, serialized_example):
         word_emb_length = [example['word_emb_length']]
         word_emb = tf.reshape(word_emb, word_emb_length)  # reshape, so shape becomes known.
         return word_emb
-
-    # one hot label
-    elif component == 'label':
-        label = tf.io.parse_tensor(example['label'], out_type=tf.int64)
-        label_length = [example['label_length']]
-        label = tf.reshape(label, label_length)
-        return label
 
 
 if __name__ == '__main__':
