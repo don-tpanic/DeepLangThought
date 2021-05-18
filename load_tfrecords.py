@@ -19,21 +19,49 @@ We should be able to:
     3. Finegrain vs coarse labels need to be added correctly.
 """
 
-def prepare_dataset(part='val_white'):
+def prepare_dataset(part='val_white', 
+                    subset='training',
+                    validation_split=0.1, 
+                    sup=None):
     """
     Purpose:
     --------
         Once all simclr outputs are .tfrecords,
         Convert them into tf.Dataset for fitting.
-    """
-    
-    dataset_iterator = DirectoryIterator(directory=f'simclr_reprs/{part}')
-    filepaths = dataset_iterator._filepaths
-    labels = dataset_iterator.classes
 
-    # TODO: need to have train/val split.
-    # TODO: in iterator, add sup choice so labels returned are sup.
-    # can shuffle out here
+        Here the preparation is general. In other words,
+        it returns train/val/test set based on the user
+        provided arguments.
+
+    inputs:
+    -------
+        part: train / val_white
+        subset: training / validation / None
+        validation_split: provided via config
+        sup: one of the superordinates / None
+    """
+    # load data iterator
+    dataset_iterator = DirectoryIterator(
+                                directory=f'simclr_reprs/{part}',
+                                classes=None,
+                                subset=subset,
+                                validation_split=validation_split,
+                                sup=sup)
+    # get all file paths
+    filepaths = np.array(dataset_iterator._filepaths)
+    # get corresponding labels (auto-inferred)
+    labels = np.array(dataset_iterator.classes)
+
+    # shuffle all (make sure file and label match)
+    np.random.seed(999)
+    ordered_indices = np.arange(len(filepaths), dtype=int)
+    shuffled_indices = np.random.choice(
+                                ordered_indices, 
+                                size=len(ordered_indices), 
+                                replace=False)
+    filepaths = filepaths[shuffled_indices]
+    labels = labels[shuffled_indices]
+    # NOTE(ken), I checked filenames and labels match after shuffle.
 
     # x
     temp = tf.data.Dataset.from_tensor_slices(filepaths)
@@ -50,6 +78,8 @@ def prepare_dataset(part='val_white'):
     dataset_target = tf.data.Dataset.zip((dataset_s, dataset_y))
 
     # For entire, we zip (x, targets)
+    # so that input to model is now (x, (semantics, labels))
+    # otherwise, won't work.
     dataset = tf.data.Dataset.zip((dataset_x, dataset_target))
 
     return dataset
