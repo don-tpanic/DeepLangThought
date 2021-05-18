@@ -33,13 +33,12 @@ def load_model():
     return SimclrFrontEnd()
 
 model = load_model()       
-# model.build(input_shape=(1,224,224,3))    
-
 wordvec_mtx = np.load('data_local/imagenet2vec/imagenet2vec_1k.npy')
 
 
 train_path = data_directory(part='train')
 class_path = f'{train_path}/n02168699'
+
 
 def _bytes_feature(value):
   """Returns a bytes_list from a string / byte."""
@@ -69,43 +68,6 @@ def serialize_example(image, label, image_shape, word_emb):
     example_proto = tf.train.Example(features=tf.train.Features(feature=feature))
     return example_proto.SerializeToString()
 
-def create_tfrecords():
-    
-    # create for one class.
-    image_paths = [os.path.join(class_path, fname) for fname in os.listdir(class_path)]
-
-    label = 5
-    labels = label * np.ones((len(image_paths))).astype(int)
-
-    one_hot_label = np.zeros((1000)).astype(int)
-    one_hot_label[label] = 1
-
-    word_emb = np.dot(one_hot_label, wordvec_mtx).astype(np.float32)
-    print(word_emb.dtype)
-    print(word_emb.shape)
-
-    tfrecord_dir = 'simclr_reprs/n02168699.tfrecords'
-    with tf.io.TFRecordWriter(tfrecord_dir) as writer:
-        for image_path, label in zip(image_paths, labels):
-            
-            x = tf.keras.preprocessing.image.load_img(image_path)
-            x = tf.keras.preprocessing.image.img_to_array(x)
-            x = tf.convert_to_tensor(x, dtype=tf.uint8)
-            x = simclr_preprocessing._preprocess(x, is_training=False)
-            # img_bytes = tf.io.serialize_tensor(x)
-
-            x = tf.reshape(x, [1, x.shape[0], x.shape[1], x.shape[2]])
-            outs = model.predict(x)
-
-            outs_bytes = tf.io.serialize_tensor(outs)
-
-            image_shape = x.shape
-            word_emb_bytes = tf.io.serialize_tensor(word_emb)
-            
-            example = serialize_example(outs_bytes, label, image_shape, word_emb_bytes)
-            writer.write(example)
-            exit()
-
 
 def read_tfrecord(serialized_example):
     feature_description = {
@@ -127,7 +89,7 @@ def read_tfrecord(serialized_example):
 
 
 
-create_tfrecords()
+
 # tfrecord_dataset = tf.data.TFRecordDataset('simclr_reprs/n02168699.tfrecords')
 # parsed_dataset = tfrecord_dataset.map(read_tfrecord)
 
