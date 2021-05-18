@@ -24,9 +24,17 @@ model.compile(tf.keras.optimizers.Adam(lr=config['lr']),
 
 from tfrecords_imagenet_simclr import prepare_dataset
 dataset = prepare_dataset().batch(8)
+for i in dataset:
+    x = i[0]
+    y1 = i[1]
+    y2 = i[2]
+    print(x.shape)
 
-# model.predict(x) this works
-model.fit(dataset, verbose=1)
+    # model.predict(x, verbose=1)      # works
+    model.fit(x, [y1, y2], verbose=1)  # works
+
+    # TODO: to make coarsegrain easy, should leave out y2
+    # and use zip later. So we keep only x and semantic in tfrecords.
 
 
 

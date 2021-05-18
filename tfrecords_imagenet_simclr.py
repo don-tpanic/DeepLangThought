@@ -188,8 +188,8 @@ def serialize_example(x, x_length,
 
 
 if __name__ == '__main__':
-    # create_tfrecords()
-    dataset = prepare_dataset().batch(8)
-    for i in dataset:
-        print(i)
-        exit()
+    create_tfrecords()
+    # dataset = prepare_dataset().batch(8)
+    # for i in dataset:
+    #     print(i)
+    #     exit()
