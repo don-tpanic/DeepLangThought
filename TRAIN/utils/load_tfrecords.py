@@ -6,6 +6,7 @@ import os
 import numpy as np 
 import tensorflow as tf
 from functools import partial
+from tensorflow.data.experimental import AUTOTUNE
 from . import iterate_tfrecords 
 
 """
@@ -22,6 +23,7 @@ We should be able to:
 def prepare_dataset(part='val_white', 
                     subset='training',
                     validation_split=0.1, 
+                    batch_size=128,
                     sup=None):
     """
     Purpose:
@@ -38,7 +40,13 @@ def prepare_dataset(part='val_white',
         part: train / val_white
         subset: training / validation / None
         validation_split: provided via config
+        batch_size: used to compute number of steps
         sup: one of the superordinates / None
+    
+    return:
+    -------
+        dataset: in the form (x, (semantic, labels))
+        num_steps
     """
     # load data iterator
     dataset_iterator = iterate_tfrecords.DirectoryIterator(
@@ -82,7 +90,8 @@ def prepare_dataset(part='val_white',
     # otherwise, won't work.
     dataset = tf.data.Dataset.zip((dataset_x, dataset_target))
 
-    return dataset
+    num_steps = np.ceil(len(labels) / batch_size)
+    return dataset.batch(batch_size).prefetch(AUTOTUNE), num_steps
 
 
 def parse_tfrecord(component, serialized_example):

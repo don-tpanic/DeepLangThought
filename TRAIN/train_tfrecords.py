@@ -8,24 +8,6 @@ from TRAIN.utils import load_tfrecords
 
 
 def execute(config):
-    lossW = 1
-    model = lang_model_contrastive(config)
-    model.build(input_shape=(1, 2048))
-    model.compile(tf.keras.optimizers.Adam(lr=config['lr']),
-                loss=['mse', 'sparse_categorical_crossentropy'],
-                loss_weights=[1, lossW],
-                metrics=['acc'])
-
-    train_dataset = load_tfrecords.prepare_dataset(subset='training').batch(8)
-    val_dataset = load_tfrecords.prepare_dataset(subset='validation').batch(8)
-
-    model.fit(train_dataset, 
-            verbose=1,
-            epochs=10,
-            validation_data=val_dataset) 
-
-
-def execute(config):
     model = lang_model_contrastive(config)
     # prev we didn't have to build, because now
     # we are headless.
@@ -50,23 +32,27 @@ def execute(config):
 
             batch_size = config['batch_size']
             validation_split = config['validation_split']
-            train_dataset = load_tfrecords.prepare_dataset(
+            train_dataset, train_steps = load_tfrecords.prepare_dataset(
                         part='train',
                         subset='training',
-                        validation_split=validation_split).batch(batch_size)
-            val_dataset = load_tfrecords.prepare_dataset(
+                        validation_split=validation_split,
+                        batch_size=batch_size,
+                        sup=sup)
+            val_dataset, val_steps = load_tfrecords.prepare_dataset(
                         part='train',
                         subset='validation',
-                        validation_split=validation_split).batch(batch_size)
+                        validation_split=validation_split,
+                        batch_size=batch_size,
+                        sup=sup)
 
             if sup is not None:
                 lossW = f'{lossW}-{sup}'
-            earlystopping, tensorboard = specific_callbacks(config=config, lossW=lossW)
+            # earlystopping, tensorboard = specific_callbacks(config=config, lossW=lossW)
 
             model.fit(train_dataset,
                     epochs=config['epochs'], 
                     verbose=1, 
-                    callbacks=[earlystopping, tensorboard],
+                    # callbacks=[earlystopping, tensorboard],
                     validation_data=val_dataset,
                     steps_per_epoch=train_steps,
                     validation_steps=val_steps,
