@@ -1,4 +1,4 @@
-config_version: simclr_finegrain_v2.2.run1
+config_version: simclr_finegrain_v3.1.run1
 front_end: 'simclr'
 path: 'r50_1x_sk0/saved_model/'
 w2_depth: 2
@@ -11,6 +11,6 @@ validation_split: 0.1
 generator_type: simclr_finegrain
 kernel_initializer: glorot_normal
 kernel_seed: 42
-headless: False
+headless: True
 
-# image preprocessing is the native simclr _preprocess.
+# Use tfrecords and headless
