@@ -20,7 +20,8 @@ We should be able to:
     3. Finegrain vs coarse labels need to be added correctly.
 """
 
-def prepare_dataset(part='val_white', 
+def prepare_dataset(part='val_white',
+                    classes=None,
                     subset='training',
                     validation_split=0.1, 
                     batch_size=128,
@@ -38,6 +39,7 @@ def prepare_dataset(part='val_white',
     inputs:
     -------
         part: train / val_white
+        classes: a list of wnids, default None
         subset: training / validation / None
         validation_split: provided via config
         batch_size: used to compute number of steps
@@ -51,7 +53,7 @@ def prepare_dataset(part='val_white',
     # load data iterator
     dataset_iterator = iterate_tfrecords.DirectoryIterator(
                                 directory=f'simclr_reprs/{part}',
-                                classes=None,
+                                classes=classes,
                                 subset=subset,
                                 validation_split=validation_split,
                                 sup=sup)
@@ -59,6 +61,7 @@ def prepare_dataset(part='val_white',
     filepaths = np.array(dataset_iterator._filepaths)
     # get corresponding labels (auto-inferred)
     labels = np.array(dataset_iterator.classes)
+    print(f'[Check] num of labels = {len(labels)}')
 
     # shuffle all (make sure file and label match)
     np.random.seed(999)
@@ -90,8 +93,10 @@ def prepare_dataset(part='val_white',
     # otherwise, won't work.
     dataset = tf.data.Dataset.zip((dataset_x, dataset_target))
 
-    num_steps = np.ceil(len(labels) / batch_size)
-    return dataset.batch(batch_size).prefetch(AUTOTUNE), num_steps
+    num_steps = np.ceil(len(labels) / batch_size).astype(int)
+    print(f'[Check] num_steps({subset}) = {num_steps}')
+    # return dataset.batch(batch_size).prefetch(AUTOTUNE), num_steps
+    return dataset.batch(batch_size), num_steps
 
 
 def parse_tfrecord(component, serialized_example):
