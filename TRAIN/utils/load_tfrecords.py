@@ -20,7 +20,7 @@ We should be able to:
     3. Finegrain vs coarse labels need to be added correctly.
 """
 
-def prepare_dataset(part='val_white',
+def prepare_dataset(directory,
                     classes=None,
                     subset='training',
                     validation_split=0.1, 
@@ -38,7 +38,7 @@ def prepare_dataset(part='val_white',
 
     inputs:
     -------
-        part: train / val_white
+        directory: path to the tfrecords.
         classes: a list of wnids, default None
         subset: training / validation / None
         validation_split: provided via config
@@ -52,7 +52,7 @@ def prepare_dataset(part='val_white',
     """
     # load data iterator
     dataset_iterator = iterate_tfrecords.DirectoryIterator(
-                                directory=f'simclr_reprs/{part}',
+                                directory=directory,
                                 classes=classes,
                                 subset=subset,
                                 validation_split=validation_split,
