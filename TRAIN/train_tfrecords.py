@@ -18,6 +18,7 @@ def execute(config):
         print(f'Error')
         exit()
 
+    classes = None
     every_runtime = []
     for sup in superordinates:
         
@@ -30,16 +31,19 @@ def execute(config):
                         loss_weights=[1, lossW],
                         metrics=['acc'])
 
-            batch_size = config['batch_size']
+            # batch_size = config['batch_size']
+            batch_size = 64
             validation_split = config['validation_split']
             train_dataset, train_steps = load_tfrecords.prepare_dataset(
                         part='train',
+                        classes=classes,
                         subset='training',
                         validation_split=validation_split,
                         batch_size=batch_size,
                         sup=sup)
             val_dataset, val_steps = load_tfrecords.prepare_dataset(
                         part='train',
+                        classes=classes,
                         subset='validation',
                         validation_split=validation_split,
                         batch_size=batch_size,
@@ -47,12 +51,12 @@ def execute(config):
 
             if sup is not None:
                 lossW = f'{lossW}-{sup}'
-            # earlystopping, tensorboard = specific_callbacks(config=config, lossW=lossW)
+            earlystopping, tensorboard = specific_callbacks(config=config, lossW=lossW)
 
-            model.fit(train_dataset,
+            model.fit(train_dataset.repeat(),
                     epochs=config['epochs'], 
                     verbose=1, 
-                    # callbacks=[earlystopping, tensorboard],
+                    callbacks=[earlystopping, tensorboard],
                     validation_data=val_dataset,
                     steps_per_epoch=train_steps,
                     validation_steps=val_steps,
@@ -69,6 +73,7 @@ def execute(config):
             duration = (end_time - start_time) / 3600.
             every_runtime.append(duration)
             config_version = config['config_version']
+            print(f'duration = {duration}')
             np.save(f'every_runtime_{config_version}.npy', every_runtime)
 
 
