@@ -4,7 +4,8 @@ import tensorflow as tf
 from keras_custom.models.language_model import lang_model_contrastive
 from TRAIN.utils.data_utils import load_config, specific_callbacks
 from TRAIN.utils.saving_utils import save_model_weights
-from TRAIN.utils import load_tfrecords
+# from TRAIN.utils import load_tfrecords
+from keras_custom.generators import load_tfrecords
 
 
 def execute(config):
