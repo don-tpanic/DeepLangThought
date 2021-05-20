@@ -18,7 +18,13 @@ def execute(config):
         print(f'Error')
         exit()
 
+    # TODO. should probably go into config.
+    directory = '/mnt/fast-data17/datasets/ken/simclr_reprs/train'
     classes = None
+    # batch_size = config['batch_size']
+    batch_size = 64
+    validation_split = config['validation_split']
+
     every_runtime = []
     for sup in superordinates:
         
@@ -31,18 +37,15 @@ def execute(config):
                         loss_weights=[1, lossW],
                         metrics=['acc'])
 
-            # batch_size = config['batch_size']
-            batch_size = 64
-            validation_split = config['validation_split']
             train_dataset, train_steps = load_tfrecords.prepare_dataset(
-                        part='train',
+                        directory=directory,
                         classes=classes,
                         subset='training',
                         validation_split=validation_split,
                         batch_size=batch_size,
                         sup=sup)
             val_dataset, val_steps = load_tfrecords.prepare_dataset(
-                        part='train',
+                        directory=directory,
                         classes=classes,
                         subset='validation',
                         validation_split=validation_split,
@@ -53,11 +56,13 @@ def execute(config):
                 lossW = f'{lossW}-{sup}'
             earlystopping, tensorboard = specific_callbacks(config=config, lossW=lossW)
 
+            # QUESTION: does val_dataset need repeat()?
+            # QUESTION: .repeat(NUM_EPOCHS)?
             model.fit(train_dataset.repeat(),
                     epochs=config['epochs'], 
                     verbose=1, 
                     callbacks=[earlystopping, tensorboard],
-                    validation_data=val_dataset,
+                    validation_data=val_dataset.repeat(),
                     steps_per_epoch=train_steps,
                     validation_steps=val_steps,
                     max_queue_size=40, 
