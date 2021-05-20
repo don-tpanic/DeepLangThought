@@ -22,7 +22,10 @@ def ready_model(config, lossW, return_semantic=True):
 
     print(f'[Check] front_end=', config['front_end'])
     if config['front_end'] == 'simclr':
-        model.build(input_shape=(1,224,224,3))
+        if config['headless'] is True:
+            model.build(input_shape=(1, 2048))
+        else:
+            model.build(input_shape=(1,224,224,3))
     elif config['front_end'] == 'vgg16':
         pass  # nothing needs done.
     
