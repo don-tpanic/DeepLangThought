@@ -10,4 +10,7 @@ generator_seed: 42
 validation_split: 0.1
 generator_type: simclr_finegrain
 
+kernel_seed:
+kernel_initializer:
+
 # image preprocessing is the native simclr _preprocess.
