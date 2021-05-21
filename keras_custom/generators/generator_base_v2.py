@@ -52,6 +52,7 @@ class Iterator(Sequence):
     def _set_index_array(self):
         self.index_array = np.arange(self.n)
         if self.shuffle:
+            # np.random.seed(self.seed)
             self.index_array = np.random.permutation(self.n)
 
     def compute_step_size(self):

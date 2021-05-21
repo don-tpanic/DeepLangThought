@@ -11,22 +11,30 @@ from tensorflow.keras.applications.vgg16 import preprocess_input
 
 from keras_custom.generators.generator_wrappers import data_generator
 from EVAL.utils.data_utils import data_directory, load_classes
-from EVAL.utils.model_utils import ready_model_simclr
+from EVAL.utils.model_utils import ready_model
 
 """
 Compute class-level semantic activations out of trained models (vgg16 or simclr)
 and compute embedding & cosine distance matrices that are going to be used 
 for further analysis.
 
-TODO: grab_activation not working for coarsegrain generators yet.
+Depending on whether dfs is provided,
+    if dfs is empty, we run the finegrain models,
+    if dfs is not empty, we run the coarsegrain models specified in dfs.
 """   
 
 def execute(config,
             compute_semantic_activation=True,
             compute_distance_matrices=True):
     part = 'val_white'
-    # dfs = ['amphibian', 'bird', 'fish', 'primate', 'reptile']
-    dfs = []
+
+    # based on the labels, we set a list to be 
+    # empty or contain all superordinates.
+    if 'finegrain' in config['config_version']:
+        dfs = []
+    else:
+        dfs = ['amphibian', 'bird', 'fish', 'primate', 'reptile']
+
     lossWs = [0, 0.1, 1, 2, 3, 5, 7, 10]
     # -------------------------------------------
     for lossW in lossWs:
@@ -34,8 +42,8 @@ def execute(config,
         if len(dfs) == 0:
             if compute_semantic_activation:
             # get trained model intercepted as `semantic_layer`
-                model = ready_model_simclr(config=config, 
-                                            lossW=lossW)
+                model = ready_model(config=config, 
+                                    lossW=lossW)
                 grab_activations(model=model, 
                                 part=part, 
                                 config=config,
@@ -55,8 +63,8 @@ def execute(config,
 
                 if compute_semantic_activation:
                     # get trained model intercepted as `semantic_layer`
-                    model = ready_model_simclr(config=config, 
-                                                lossW=lossW)
+                    model = ready_model(config=config, 
+                                        lossW=lossW)
 
                     grab_activations(model=model, 
                                     part=part, 

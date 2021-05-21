@@ -1,6 +1,6 @@
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '0'
+os.environ["CUDA_VISIBLE_DEVICES"]= '2'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import argparse
@@ -60,17 +60,3 @@ if __name__ == '__main__':
     elif args.plot is True:
         print(f'**** Plotting all final results ****')
         results_vis.execute(config)
-
-
-
-    # if args.run == 'eval':
-    #     print('***** evaluating intermediate results used for plotting *****')
-    #     # compare_semantic_activations.execute()
-
-    #     # TODO. Need user choice to do eval finegrain or coarsegrain.
-    #     compute_activations_n_matrices.execute()
-
-    # TODO. needs update
-    # elif args.run == 'plot':
-    #     print('***** plotting figures *****')
-    #     results_vis.execute()
