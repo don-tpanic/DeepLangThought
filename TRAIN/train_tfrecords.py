@@ -2,7 +2,7 @@ import time
 import numpy as np
 import tensorflow as tf
 from keras_custom.models.language_model import lang_model_contrastive
-from TRAIN.utils.data_utils import load_config, specific_callbacks
+from TRAIN.utils.data_utils import load_config, specific_callbacks, data_directory
 from TRAIN.utils.saving_utils import save_model_weights
 # from TRAIN.utils import load_tfrecords
 from keras_custom.generators import load_tfrecords
@@ -13,17 +13,17 @@ def execute(config):
     # prev we didn't have to build, because now
     # we are headless.
     model.build(input_shape=(1, 2048))
-    lossWs = [1, 2, 3, 5, 7, 10, 0.1, 0]
+    # lossWs = [1, 2, 3, 5, 7, 10, 0.1, 0]
+    lossWs = [2, 3, 1]
     superordinates = [None]
     if 'finegrain' in config['config_version'] and len(superordinates) > 1:
         print(f'Error')
         exit()
 
     # TODO. should probably go into config.
-    directory = '/mnt/fast-data17/datasets/ken/simclr_reprs/train'
+    directory = data_directory(part='train', tfrecords=True)
     classes = None
-    # batch_size = config['batch_size']
-    batch_size = 64
+    batch_size = config['batch_size']
     validation_split = config['validation_split']
 
     every_runtime = []
@@ -59,11 +59,11 @@ def execute(config):
 
             # QUESTION: does val_dataset need repeat()?
             # QUESTION: .repeat(NUM_EPOCHS)?
-            model.fit(train_dataset.repeat(),
+            model.fit(train_dataset.repeat(config['epochs']),
                     epochs=config['epochs'], 
                     verbose=1, 
                     callbacks=[earlystopping, tensorboard],
-                    validation_data=val_dataset.repeat(),
+                    validation_data=val_dataset.repeat(config['epochs']),
                     steps_per_epoch=train_steps,
                     validation_steps=val_steps,
                     max_queue_size=40, 
