@@ -1,6 +1,6 @@
 from .labels_corrector import wnids_to_network_indices, indices_rematch
 from . import superGroupGenerator as supGen
-from . import generator_base, generator_base_v2
+from . import generator_base_v2
 
 """
 Customer generators wrapper for Language model only.

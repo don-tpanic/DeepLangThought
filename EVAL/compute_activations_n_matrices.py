@@ -11,7 +11,7 @@ from tensorflow.keras.applications.vgg16 import preprocess_input
 
 from EVAL.utils.data_utils import data_directory, load_classes
 from EVAL.utils.model_utils import ready_model
-# from keras_custom.generators.generator_wrappers import data_generator
+from keras_custom.generators.generator_wrappers import data_generator_v2
 from keras_custom.generators import load_tfrecords
 
 
@@ -37,7 +37,7 @@ def execute(config,
     else:
         dfs = ['amphibian', 'bird', 'fish', 'primate', 'reptile']
 
-    lossWs = [1, 2, 3, 5, 7, 10, 0, 0.1]
+    lossWs = [1, 2, 3, 5, 7, 10, 0.1, 0]
     # -------------------------------------------
     for lossW in lossWs:
         
@@ -46,14 +46,14 @@ def execute(config,
             # get trained model intercepted as `semantic_layer`
                 model = ready_model(config=config, 
                                     lossW=lossW)
-                # grab_activations(model=model, 
-                #                 part=part, 
-                #                 config=config,
-                #                 lossW=lossW)
-                grab_activations_tfrecords(model=model,
-                                           part=part,
-                                           config=config,
-                                           lossW=lossW)
+                grab_activations(model=model, 
+                                part=part, 
+                                config=config,
+                                lossW=lossW)
+                # grab_activations_tfrecords(model=model,
+                #                            part=part,
+                #                            config=config,
+                #                            lossW=lossW)
             if compute_distance_matrices:
                 embedding_n_distance_matrices(
                                 config=config, 
@@ -176,7 +176,7 @@ def grab_activations(model, part, config, lossW):
                 # coarsegrain at all.
                 NotImplementedError()
                 
-            gen, steps = data_generator(
+            gen, steps = data_generator_v2(
                                 directory=directory,
                                 classes=[wnid],
                                 batch_size=128,
