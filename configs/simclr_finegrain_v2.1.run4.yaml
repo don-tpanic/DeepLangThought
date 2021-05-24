@@ -1,4 +1,4 @@
-config_version: simclr_finegrain_v2.1.run3
+config_version: simclr_finegrain_v2.1.run4
 front_end: 'simclr'
 path: 'r50_1x_sk0/saved_model/'
 w2_depth: 2
@@ -10,6 +10,6 @@ generator_seed: 42
 validation_split: 0.1
 generator_type: simclr_finegrain
 kernel_seed: 42
-kernel_initializer: 
+kernel_initializer:
 headless: False
 # image preprocessing is the native simclr _preprocess.
