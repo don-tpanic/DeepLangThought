@@ -1,4 +1,4 @@
-config_version: vgg16_finegrain_v1.1.run1
+config_version: vgg16_finegrain_v1.1.run2
 front_end: 'vgg16'
 path: 
 w2_depth: 2
@@ -9,5 +9,3 @@ epochs: 500
 generator_seed: 42
 validation_split: 0.1
 generator_type: vgg16_finegrain
-
-# This is in fact the original converted to this format.
