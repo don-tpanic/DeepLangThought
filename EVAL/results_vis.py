@@ -60,7 +60,7 @@ def Exp1_AB(config, lossWs, results_path, part='val_white', sup=None):
         distMtx = np.load(f'resources_{part}/_L2_matrices/{config_version}/lossW={lossW}.npy')      
         subMtx = distMtx[indices, :][:, indices]
         subMtx_uptri = subMtx[np.triu_indices(subMtx.shape[0])]
-
+        print(f'Average distance = {np.mean(subMtx_uptri)}')
         all_uptris.append(subMtx_uptri)
 
     violinplot(data=all_uptris, cut=-5, linewidth=.8, gridsize=300)

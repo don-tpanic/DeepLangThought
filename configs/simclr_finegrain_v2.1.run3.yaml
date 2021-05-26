@@ -9,5 +9,7 @@ epochs: 500
 generator_seed: 42
 validation_split: 0.1
 generator_type: simclr_finegrain
-
+kernel_seed: 42
+kernel_initializer: 
+headless: False
 # image preprocessing is the native simclr _preprocess.

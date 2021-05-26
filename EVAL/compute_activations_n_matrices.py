@@ -9,9 +9,11 @@ from sklearn.metrics.pairwise import cosine_distances
 import tensorflow as tf
 from tensorflow.keras.applications.vgg16 import preprocess_input
 
-from keras_custom.generators.generator_wrappers import data_generator
 from EVAL.utils.data_utils import data_directory, load_classes
 from EVAL.utils.model_utils import ready_model
+from keras_custom.generators.generator_wrappers import data_generator_v2
+from keras_custom.generators import load_tfrecords
+
 
 """
 Compute class-level semantic activations out of trained models (vgg16 or simclr)
@@ -35,7 +37,7 @@ def execute(config,
     else:
         dfs = ['amphibian', 'bird', 'fish', 'primate', 'reptile']
 
-    lossWs = [0, 0.1, 1, 2, 3, 5, 7, 10]
+    lossWs = [1, 2, 3, 5, 7, 10, 0.1, 0]
     # -------------------------------------------
     for lossW in lossWs:
         
@@ -44,10 +46,16 @@ def execute(config,
             # get trained model intercepted as `semantic_layer`
                 model = ready_model(config=config, 
                                     lossW=lossW)
-                grab_activations(model=model, 
-                                part=part, 
-                                config=config,
-                                lossW=lossW)
+                if config['headless'] is False:
+                    grab_activations(model=model, 
+                                    part=part, 
+                                    config=config,
+                                    lossW=lossW)
+                else:
+                    grab_activations_tfrecords(model=model,
+                                                part=part,
+                                                config=config,
+                                                lossW=lossW)
             if compute_distance_matrices:
                 embedding_n_distance_matrices(
                                 config=config, 
@@ -80,6 +88,44 @@ def execute(config,
                                     useVGG=False, 
                                     bert=False)
     
+
+def grab_activations_tfrecords(model, part, config, lossW):
+    config_version = config['config_version']
+    if 'vgg16' in config_version:
+        print(f'tfrecords not yet supporting models other than simclr.')
+        exit()
+    wordvec_mtx = np.load('data_local/imagenet2vec/imagenet2vec_1k.npy')
+    directory = data_directory(part=part, tfrecords=True)
+    wnids, indices, categories = load_classes(num_classes=1000, df='ranked')
+
+    for i in range(len(wnids)):
+        wnid = wnids[i]
+        category = categories[i]
+
+        save_path = f'resources_{part}/_computed_activations/{config_version}/lossW={lossW}'
+        if not os.path.exists(save_path):
+            os.makedirs(save_path)
+        
+        file2save = os.path.join(save_path, f'{category}.npy')
+        if not os.path.exists(file2save):
+            test_dataset, test_steps = load_tfrecords.prepare_dataset(
+                        directory=directory,
+                        classes=[wnid],
+                        subset=None,
+                        validation_split=0.0,
+                        batch_size=64,
+                        sup=None)
+            # (N, 768)
+            proba = model.predict(test_dataset, test_steps, verbose=1, workers=3)
+
+            # (768,)
+            avg_vec = np.mean(proba, axis=0)
+            assert avg_vec.shape == (768,)
+
+            # save avg vec
+            np.save(file2save, avg_vec)
+            print(f'[Check]: saved {file2save}.')
+
 
 def grab_activations(model, part, config, lossW):
     """
@@ -132,7 +178,7 @@ def grab_activations(model, part, config, lossW):
                 # coarsegrain at all.
                 NotImplementedError()
                 
-            gen, steps = data_generator(
+            gen, steps = data_generator_v2(
                                 directory=directory,
                                 classes=[wnid],
                                 batch_size=128,

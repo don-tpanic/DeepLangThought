@@ -3,7 +3,7 @@ import numpy as np
 import tensorflow as tf
 from tensorflow.keras.applications.vgg16 import preprocess_input
 from keras_custom.models.language_model import lang_model_contrastive
-from keras_custom.generators.generator_wrappers import data_generator, data_generator_v2
+from keras_custom.generators.generator_wrappers import data_generator_v2
 from TRAIN.utils.data_utils import load_config, specific_callbacks, data_directory
 from TRAIN.utils.saving_utils import save_model_weights
 
@@ -43,22 +43,8 @@ def train_n_val_data_gen(config, subset, bert_random=False, generator_type='simc
         preprocessing_function = preprocess_input
         simclr_range = False
 
-    # gen, steps = data_generator(directory=directory,
-    #                             classes=None,
-    #                             batch_size=config['batch_size'],
-    #                             seed=config['generator_seed'],
-    #                             shuffle=True,
-    #                             subset=subset,
-    #                             validation_split=config['validation_split'],
-    #                             class_mode='categorical',
-    #                             target_size=(224, 224),
-    #                             preprocessing_function=preprocessing_function,
-    #                             horizontal_flip=True, 
-    #                             wordvec_mtx=wordvec_mtx,
-    #                             simclr_range=simclr_range,
-    #                             simclr_augment=False)
-
-    gen, steps = data_generator_v2(directory=directory,
+    gen, steps = data_generator_v2(
+                            directory=directory,
                             classes=None,
                             batch_size=config['batch_size'],
                             seed=config['generator_seed'],
@@ -78,7 +64,8 @@ def train_n_val_data_gen(config, subset, bert_random=False, generator_type='simc
 
 def execute(config):
     model = lang_model_contrastive(config)
-    lossWs = [1, 2, 3, 5, 7, 10, 0.1, 0]
+    # lossWs = [1, 2, 3, 5, 7, 10, 0.1, 0]
+    lossWs = [1, 2, 3]
     superordinates = [None]
     if 'finegrain' in config['config_version'] and len(superordinates) > 1:
         print(f'Error')
