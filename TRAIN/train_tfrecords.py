@@ -13,7 +13,10 @@ def execute(config):
     # we are headless.
     model.build(input_shape=(1, 2048))
     lossWs = [1, 2, 3, 5, 7, 10, 0.1, 0]
-    superordinates = ['reptile', 'canidae', 'bird', 'amphibian', 'primate']
+    if 'finegrain' in config['config_version']:
+        superordinates = [None]
+    else:
+        superordinates = ['reptile', 'canidae', 'bird', 'amphibian', 'primate']
     if 'finegrain' in config['config_version'] and len(superordinates) > 1:
         print(f'Error')
         exit()
