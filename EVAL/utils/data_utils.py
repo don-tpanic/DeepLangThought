@@ -29,7 +29,7 @@ def load_classes(num_classes, df='imagenetA'):
     return wnids.tolist(), indices, descriptions
 
 
-def data_directory(part):
+def data_directory(part, tfrecords=False):
     """
     Check which server we are on and return the corresponding 
     imagenet data directory.
@@ -39,13 +39,19 @@ def data_directory(part):
     hostname = socket.gethostname()
     if hostname == 'oem-Z11PG-D24-Series':
         print('server: scan test server')
-        imagenet_dir = f'/home/oem/datasets/ILSVRC/2012/clsloc/{part}'
+        data_dir = f'/home/oem/datasets/ILSVRC/2012/clsloc/{part}'
     else:
         server_num = int(hostname[4:6])
         print(f'server_num = {server_num}')
         if server_num <= 20:
-            imagenet_dir = f'/mnt/fast-data{server_num}/datasets/ILSVRC/2012/clsloc/{part}'
+            if tfrecords:
+                data_dir = f'/mnt/fast-data{server_num}/datasets/ken/simclr_reprs/{part}'
+            else:
+                data_dir = f'/mnt/fast-data{server_num}/datasets/ILSVRC/2012/clsloc/{part}'
         else:
-            imagenet_dir = f'/fast-data{server_num}/datasets/ILSVRC/2012/clsloc/{part}'
-    return imagenet_dir
+            if tfrecords:
+                data_dir = f'/fast-data{server_num}/datasets/ken/simclr_reprs/{part}'
+            else:
+                data_dir = f'/fast-data{server_num}/datasets/ILSVRC/2012/clsloc/{part}'
+    return data_dir
 

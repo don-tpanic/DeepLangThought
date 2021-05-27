@@ -156,7 +156,10 @@ def lang_model_contrastive(config, return_semantic=False):
                     super(LangModel, self).__init__()
                     self.config = config
                     self.return_semantic = return_semantic
-                    if self.config is not None:
+                         
+                    # i.e. inputs are from image space.
+                    if self.config['headless'] is False:
+                         # head
                          self.saved_model = tf.saved_model.load(self.config['path'])
 
                          # TODO: hardcoded, better way to do this?
@@ -178,19 +181,52 @@ def lang_model_contrastive(config, return_semantic=False):
                                                                       activation='softmax',
                                                                       name='discrete_layer',
                                                                       kernel_initializer=kernel_initializer)
-                    else: 
-                         self.saved_model = tf.saved_model.load('r50_1x_sk0/saved_model/')
+                    # i.e. inputs are from simclr outputs
+                    # TODO. How to avoid repeating?
+                    else:
+                         self.w2_dense0_layer = tf.keras.layers.Dense(4096, 
+                                                                      activation='relu',
+                                                                      name=f"w2_dense_0",
+                                                                      kernel_initializer=kernel_initializer)
+                         self.w2_dense1_layer = tf.keras.layers.Dense(4096, 
+                                                                      activation='relu',
+                                                                      name=f"w2_dense_1",
+                                                                      kernel_initializer=kernel_initializer)
+                         self.semantic_layer = tf.keras.layers.Dense(768, 
+                                                                 activation=None,
+                                                                 name='semantic_layer',
+                                                                 kernel_initializer=kernel_initializer)  
+                         # Do not initialise if only need semantic outs.
+                         if self.return_semantic is False:                
+                              self.classify_layer = tf.keras.layers.Dense(1000, 
+                                                                      activation='softmax',
+                                                                      name='discrete_layer',
+                                                                      kernel_initializer=kernel_initializer)
 
                def call(self, inputs):
                     """
                     Straightforward feedforward net
                     """
-                    simclr_outputs = self.saved_model(inputs, trainable=False)
-                    # print(simclr_outputs)
-                    if self.config is None:
-                         return simclr_outputs['final_avg_pool']
-                    else:
+                    # inputs are images and need to go thru simclr
+                    if self.config['headless'] is False:
+                         simclr_outputs = self.saved_model(inputs, trainable=False)
+
                          x = self.w2_dense0_layer(simclr_outputs['final_avg_pool'])
+                         x = self.w2_dense1_layer(x)
+                         semantic_output = self.semantic_layer(x)
+
+                         # We only return semantic output
+                         # when eval trained models
+                         if return_semantic is True:
+                              return semantic_output
+                         # When training full model,  we include the classifier.
+                         else:
+                              classify_output = self.classify_layer(semantic_output)
+                              return semantic_output, classify_output
+                    
+                    # inputs are simclr outputs, directly go thru dense layers.
+                    else:
+                         x = self.w2_dense0_layer(inputs)
                          x = self.w2_dense1_layer(x)
                          semantic_output = self.semantic_layer(x)
 
