@@ -60,7 +60,12 @@ def prepare_dataset(directory,
     # get all file paths
     filepaths = np.array(dataset_iterator._filepaths)
     # get corresponding labels (auto-inferred)
-    labels = np.array(dataset_iterator.classes)
+    # if finegrain, return self.classes
+    if sup is None:
+        labels = np.array(dataset_iterator.classes)
+    else:
+        labels = np.array(dataset_iterator.classes_sup)
+        # NOTE(ken), checked labels are swapped.
     print(f'[Check] num of labels = {len(labels)}')
 
     # shuffle all (make sure file and label match)
