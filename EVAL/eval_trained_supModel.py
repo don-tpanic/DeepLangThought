@@ -29,55 +29,48 @@ def execute():
         # Load entire trained model.
         model = ready_model_simclr(config, lossW, return_semantic=False)
         directory = data_directory(part=part)
-        wnids, indices, categories = load_classes(num_classes=1000, df='reptile')
 
-
+        sup_wnids, sup_indices, sup_descriptions = load_classes(num_classes=999, df='reptile')
+        index = sup_indices[0]
+        print(index)
         percent_of151 = []
 
-
-        # one class at a time,
-        # each class, final result is an average 768 vector
-        for i in range(len(wnids)):
-            wnid = wnids[i]
-            category = categories[i]
-            index = indices[i]
-
-            gen, steps = data_generator_v2(directory=directory,
-                            classes=[wnid],
-                            batch_size=config['batch_size'],
-                            seed=config['generator_seed'],
-                            shuffle=False,
-                            subset=subset,
-                            validation_split=config['validation_split'],
-                            class_mode='categorical',
-                            target_size=(224, 224),
-                            preprocessing_function=preprocessing_function,
-                            horizontal_flip=false, 
-                            wordvec_mtx=None,
-                            simclr_range=False,
-                            simclr_augment=False,
-                            sup='reptile')
+        gen, steps = data_generator_v2(directory=directory,
+                        classes=None,
+                        batch_size=config['batch_size'],
+                        seed=config['generator_seed'],
+                        shuffle=False,
+                        subset='validation',
+                        validation_split=config['validation_split'],
+                        class_mode='categorical',
+                        target_size=(224, 224),
+                        preprocessing_function=None,
+                        horizontal_flip=False, 
+                        wordvec_mtx=None,
+                        simclr_range=False,
+                        simclr_augment=False,
+                        sup='reptile')
 
 
-            # [(, .768), (n, 1000)]
-            outputs = model.predict_generator(gen, steps, verbose=0, workers=3)
-            output_probs = outputs[1]
-            # find the highest unit for each image given class.
+        # [(, .768), (n, 1000)]
+        outputs = model.predict(gen, steps, verbose=1, workers=3)
+        output_probs = outputs[1]
+        # find the highest unit for each image given class.
 
-            #highest_unit_per_class = []
-            highest_unit_per_class = 0
-            for i in range(output_probs.shape[0]):
-                prob_i = output_probs[i, :]
-                max_unit = np.argmax(prob_i)
-                #highest_unit_per_class.append(max_unit)
-                if max_unit == 151:
-                    highest_unit_per_class += 1
+        #highest_unit_per_class = []
+        highest_unit_per_class = 0
+        for i in range(output_probs.shape[0]):
+            prob_i = output_probs[i, :]
+            max_unit = np.argmax(prob_i)
+            print(max_unit)
+            #highest_unit_per_class.append(max_unit)
+            if max_unit == index:
+                highest_unit_per_class += 1
 
-            percent_of151_per_class = highest_unit_per_class / output_probs.shape[0]
-            percent_of151.append(percent_of151_per_class)
-            
-            print(f'original class = [{index}]')
-            print('percent of 151 per class = ', percent_of151_per_class)
-            print('----------------------------')
+        percent_of151_per_class = highest_unit_per_class / output_probs.shape[0]
+        percent_of151.append(percent_of151_per_class)
         
-        np.save(f'percent_of151-lossW={lossW}.npy', percent_of151)
+        print(f'original class = [{index}]')
+        print('percent of 151 per class = ', percent_of151_per_class)
+        print('----------------------------')
+        print(np.mean(percent_of151))

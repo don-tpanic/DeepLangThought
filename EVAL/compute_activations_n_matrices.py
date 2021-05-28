@@ -35,9 +35,9 @@ def execute(config,
     if 'finegrain' in config['config_version']:
         dfs = []
     else:
-        dfs = ['amphibian', 'bird', 'fish', 'primate', 'reptile']
-
-    lossWs = [1, 2, 3, 5, 7, 10, 0.1, 0]
+        # dfs = ['amphibian', 'bird', 'canidae', 'primate', 'reptile']
+        dfs = ['canidae', 'primate', 'reptile']
+    lossWs = [7, 10]
     # -------------------------------------------
     for lossW in lossWs:
         
@@ -67,7 +67,7 @@ def execute(config,
         else:
             original_lossW = lossW
             for df in dfs:
-                lossW = f'{original_lossW}-sup={df}'
+                lossW = f'{original_lossW}-{df}'
 
                 if compute_semantic_activation:
                     # get trained model intercepted as `semantic_layer`
@@ -165,13 +165,12 @@ def grab_activations(model, part, config, lossW):
         file2save = os.path.join(save_path, f'{category}.npy')
         if not os.path.exists(file2save):
 
-            if generator_type == 'simclr_finegrain':
+            if 'simclr' in generator_type:
                 preprocessing_function = None
                 simclr_range = True
 
             elif generator_type == 'vgg16_finegrain':
-                preprocessing_function = preprocess_input
-                simclr_range = False                
+                NotImplementedError()            
 
             elif generator_type == 'vgg16_coarsegrain':
                 # TODO. Right now data_generator does not support

@@ -4,7 +4,6 @@ import tensorflow as tf
 from keras_custom.models.language_model import lang_model_contrastive
 from TRAIN.utils.data_utils import load_config, specific_callbacks, data_directory
 from TRAIN.utils.saving_utils import save_model_weights
-# from TRAIN.utils import load_tfrecords
 from keras_custom.generators import load_tfrecords
 
 
@@ -13,10 +12,11 @@ def execute(config):
     # prev we didn't have to build, because now
     # we are headless.
     model.build(input_shape=(1, 2048))
-    # lossWs = [1, 2, 3, 5, 7, 10, 0.1, 0]
-    # lossWs = [3, 5, 7, 1, 2]
-    lossW = [10, 0.1, 0]
-    superordinates = [None]
+    lossWs = [1, 2, 3, 5, 7, 10, 0.1, 0]
+    if 'finegrain' in config['config_version']:
+        superordinates = [None]
+    else:
+        superordinates = ['reptile', 'canidae', 'bird', 'amphibian', 'primate']
     if 'finegrain' in config['config_version'] and len(superordinates) > 1:
         print(f'Error')
         exit()
