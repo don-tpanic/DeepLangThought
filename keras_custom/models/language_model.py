@@ -271,6 +271,13 @@ def lang_model_contrastive(config, return_semantic=False):
           # -- new code after chatting with Brad --
           layer = config['layer']
           x = vgg.get_layer(layer).output
+          # Freeze all layers until the specified `layer`
+          for layer in vgg.layers:
+               if layer.name == 'flatten':
+                    layer.trainable = False
+                    break
+               else:
+                    layer.trainable = False
 
           # add a number of Dense layer between FC2 and semantic
           for i in range(w2_depth):
@@ -291,7 +298,6 @@ def lang_model_contrastive(config, return_semantic=False):
                          kernel_initializer=keras.initializers.glorot_normal(seed=seed))(semantic_output)
                model = Model(inputs=vgg.input, outputs=[semantic_output, discrete_output])
           model.summary()
-          #plot_model(model, to_file='lang_model.png')
           return model
 
 

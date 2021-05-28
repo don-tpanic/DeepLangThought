@@ -10,4 +10,8 @@ generator_seed: 42
 validation_split: 0.1
 generator_type: vgg16_finegrain
 
+layer: fc2
+
+
 # This is in fact the original converted to this format.
+# added layer to be consistent with v2 where we re-train the old (fc1 & fc2) from scratch.
