@@ -14,7 +14,8 @@ def execute(config):
     # we are headless.
     model.build(input_shape=(1, 2048))
     # lossWs = [1, 2, 3, 5, 7, 10, 0.1, 0]
-    lossWs = [2, 3, 1]
+    # lossWs = [3, 5, 7, 1, 2]
+    lossW = [10, 0.1, 0]
     superordinates = [None]
     if 'finegrain' in config['config_version'] and len(superordinates) > 1:
         print(f'Error')

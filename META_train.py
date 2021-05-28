@@ -1,6 +1,6 @@
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '1'
+os.environ["CUDA_VISIBLE_DEVICES"]= '0'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import argparse
@@ -24,5 +24,5 @@ Example command:
 if __name__ == '__main__':
     config_version = f'{args.frontend}_{args.label}_{args.version}'
     config = load_config(config_version)
-    train.execute(config)
-    # train_tfrecords.execute(config)
+    # train.execute(config)
+    train_tfrecords.execute(config)
