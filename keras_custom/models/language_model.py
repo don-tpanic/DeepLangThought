@@ -240,15 +240,27 @@ def lang_model_contrastive(config, return_semantic=False):
           vgg.load_weights('VGG16_finetuned_fullmodelWeights.h5')
           print('loaded in fine tuned VGG16 weights.')
 
-          x = vgg.input
-          # we can change the second index to
-          # remove some layers such as the FC layers.
+          # -- old code prior revision --
+          # x = vgg.input
+          # # we can change the second index to
+          # # remove some layers such as the FC layers.
 
-          # e.g. [1, :-1] --> keep FC1,2
-          # e.g. [1, :-3] --> remove FC1,2
-          for layer in vgg.layers[1:-1]:
-               layer.trainable = False
-               x = layer(x)
+          # # e.g. [1, :-1] --> keep FC1,2
+          # # e.g. [1, :-3] --> remove FC1,2
+          # for layer in vgg.layers[1:-1]:
+          #      layer.trainable = False
+          #      x = layer(x)
+
+          # NOTE(ken): improve code so we can continue training from 
+          # any given layer not just after fc2. For the moment, 
+          # the idea is to re-train 2 FCs from scratch rather than training 
+          # from the pre-trained states. The easiest way to do that, is to
+          # keep the folllowing code but intercept the original network
+          # at a desirable layer, i.e. `flatten`
+
+          # -- new code after chatting with Brad --
+          layer = config['layer']
+          x = vgg.get_layer(layer).output
 
           # add a number of Dense layer between FC2 and semantic
           for i in range(w2_depth):
