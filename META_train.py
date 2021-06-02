@@ -1,3 +1,7 @@
+import os
+os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
+os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+
 import argparse
 from TRAIN import train
 from TRAIN import train_tfrecords
@@ -37,10 +41,8 @@ Meaning: train with `finegrain` labels, use `simclr` as front end,
 """
 
 if __name__ == '__main__': 
-    import os
-    os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-    os.environ["CUDA_VISIBLE_DEVICES"]= args.gpu_index
-    os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
+    
+    os.environ["CUDA_VISIBLE_DEVICES"]= f"{args.gpu_index}"
 
     config_version = f'{args.frontend}_{args.label}_{args.version}'
     config = load_config(config_version)

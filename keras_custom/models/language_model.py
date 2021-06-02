@@ -264,7 +264,6 @@ def lang_model_contrastive(config, return_semantic=False):
           # Freeze all layers until the specified `layer`
           for layer in vgg.layers:
                if layer.name == 'flatten':
-                    layer.trainable = False
                     break
                else:
                     layer.trainable = False
