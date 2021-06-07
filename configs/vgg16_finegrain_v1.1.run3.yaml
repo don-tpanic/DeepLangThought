@@ -1,0 +1,16 @@
+config_version: vgg16_finegrain_v1.1.run3
+front_end: 'vgg16'
+path: 
+w2_depth: 2
+lr: 0.00003
+patience: 5
+batch_size: 128
+epochs: 500
+generator_seed: 42
+validation_split: 0.1
+generator_type: vgg16_finegrain
+
+layer: fc2
+mixed_precision: false
+
+# Use `attn_tf22_py37` and `tf.train.experimental.enable_mixed_precision_graph_rewrite`

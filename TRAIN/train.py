@@ -64,7 +64,8 @@ def train_n_val_data_gen(config, subset, bert_random=False, generator_type='simc
 
 def execute(config):
     model = lang_model_contrastive(config)
-    lossWs = [1, 2, 3, 5, 7, 10, 0.1, 0]
+    # lossWs = [1, 2, 3, 5, 7, 10, 0.1, 0]
+    lossWs = [3]
     if 'finegrain' in config['config_version']:
         superordinates = [None]
     else:
@@ -81,10 +82,15 @@ def execute(config):
             # for every lossW, we restart the timer.
             start_time = time.time()
 
-            model.compile(tf.keras.optimizers.Adam(lr=config['lr']),
+            opt = tf.train.experimental.enable_mixed_precision_graph_rewrite(opt=tf.keras.optimizers.Adam(lr=config['lr']))
+            model.compile(opt,
                         loss=['mse', 'categorical_crossentropy'],
                         loss_weights=[1, lossW],
                         metrics=['acc'])
+            # model.compile(tf.keras.optimizers.Adam(lr=config['lr']),
+            #             loss=['mse', 'categorical_crossentropy'],
+            #             loss_weights=[1, lossW],
+            #             metrics=['acc'])
 
             train_gen, train_steps = train_n_val_data_gen(
                         config=config, 
