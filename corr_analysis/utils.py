@@ -33,7 +33,8 @@ def ensemble_marginalized_similarity(
 
     smat_list = []
     for mid in mid_list:
-        model = tf.keras.models.load_model(mid.pathname)
+        model = tf.keras.models.load_model(mid)
+        model.summary()
         sim_arr = psiz.utils.pairwise_similarity(
             model.stimuli, model.kernel, ds_pairs,
             n_sample=n_posterior_sample, compute_average=True,
