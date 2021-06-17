@@ -34,10 +34,14 @@ args = parser.parse_args()
 
 """
 Example command:
-    python META_train.py -l finegrain -f simclr -v v2.2.run1 -r False
+    python META_train.py -l coarsegrain -f simclr -v v3.1.run12 -r True -gpu 0
 
-Meaning: train with `finegrain` labels, use `simclr` as front end,
-          config version `v2.2.run1` and data not stored as `tfrecords`.
+Meaning:
+    - train with `coarsegrain` labels,
+    - use `simclr` as front end,
+    - config version `v3.1.run12`
+    - data pipeline uses tfrecords
+    - use gpu 0 
 """
 
 if __name__ == '__main__': 
