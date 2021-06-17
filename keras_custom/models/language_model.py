@@ -137,8 +137,11 @@ def lang_model_contrastive(config, return_semantic=False):
           Trainable params: 37,478,120
           Non-trainable params: 134,260,544
      """    
+     if config['mixed_precision'] is True:
+          tf.keras.mixed_precision.set_global_policy('mixed_float16')
+          print('[Check] Setting global policy to mixed_float16..')
+
      if config['front_end'] == 'simclr':
-          
           seed = config['kernel_seed']
           if config['kernel_initializer'] == 'glorot_normal':
                kernel_initializer = tf.keras.initializers.glorot_normal(seed=seed)
@@ -156,90 +159,75 @@ def lang_model_contrastive(config, return_semantic=False):
                     super(LangModel, self).__init__()
                     self.config = config
                     self.return_semantic = return_semantic
-                         
-                    # i.e. inputs are from image space.
+
+                    # --- when not headless, load the simclr front end --- #
                     if self.config['headless'] is False:
-                         # head
                          self.saved_model = tf.saved_model.load(self.config['path'])
 
-                         # TODO: hardcoded, better way to do this?
-                         self.w2_dense0_layer = tf.keras.layers.Dense(4096, 
-                                                                      activation='relu',
-                                                                      name=f"w2_dense_0",
-                                                                      kernel_initializer=kernel_initializer)
-                         self.w2_dense1_layer = tf.keras.layers.Dense(4096, 
-                                                                      activation='relu',
-                                                                      name=f"w2_dense_1",
-                                                                      kernel_initializer=kernel_initializer)
-                         self.semantic_layer = tf.keras.layers.Dense(768, 
-                                                                 activation=None,
-                                                                 name='semantic_layer',
-                                                                 kernel_initializer=kernel_initializer)  
-                         # Do not initialise if only need semantic outs.
-                         if self.return_semantic is False:                
+                    # --- define layers that are used regardless of headless or not. --- #
+                    self.w2_dense0_layer = tf.keras.layers.Dense(4096, 
+                                                                 activation='relu',
+                                                                 name=f"w2_dense_0",
+                                                                 kernel_initializer=kernel_initializer)
+                    self.w2_dense1_layer = tf.keras.layers.Dense(4096, 
+                                                                 activation='relu',
+                                                                 name=f"w2_dense_1",
+                                                                 kernel_initializer=kernel_initializer)
+                    self.semantic_layer = tf.keras.layers.Dense(768, 
+                                                                activation=None,
+                                                                name='semantic_layer',
+                                                                kernel_initializer=kernel_initializer)  
+
+                    # --- define discrete layer or not depending on whether to return semantic only. --- #
+                    if self.return_semantic is False:                
+                         if config['mixed_precision'] is False:          
                               self.classify_layer = tf.keras.layers.Dense(1000, 
                                                                       activation='softmax',
                                                                       name='discrete_layer',
                                                                       kernel_initializer=kernel_initializer)
-                    # i.e. inputs are from simclr outputs
-                    # TODO. How to avoid repeating?
-                    else:
-                         self.w2_dense0_layer = tf.keras.layers.Dense(4096, 
-                                                                      activation='relu',
-                                                                      name=f"w2_dense_0",
-                                                                      kernel_initializer=kernel_initializer)
-                         self.w2_dense1_layer = tf.keras.layers.Dense(4096, 
-                                                                      activation='relu',
-                                                                      name=f"w2_dense_1",
-                                                                      kernel_initializer=kernel_initializer)
-                         self.semantic_layer = tf.keras.layers.Dense(768, 
-                                                                 activation=None,
-                                                                 name='semantic_layer',
-                                                                 kernel_initializer=kernel_initializer)  
-                         # Do not initialise if only need semantic outs.
-                         if self.return_semantic is False:                
-                              self.classify_layer = tf.keras.layers.Dense(1000, 
-                                                                      activation='softmax',
+                         # NOTE(ken), when use mixed precision 
+                         # based on: https://www.tensorflow.org/guide/mixed_precision
+                         else:
+                              # default activation to Dense of `None`.
+                              self.classify_layer = tf.keras.layers.Dense(1000,
+                                                                      activation=None,
                                                                       name='discrete_layer',
                                                                       kernel_initializer=kernel_initializer)
+
+                              print(f'[Check] classify_layer dtype = {self.classify_layer.dtype_policy}')
+                              self.softmax_layer = tf.keras.layers.Activation('softmax', dtype='float32', name='softmax')
+                              print(f'[Check] softmax_layer dtype = {self.softmax_layer.dtype_policy}')
 
                def call(self, inputs):
                     """
                     Straightforward feedforward net
                     """
-                    # inputs are images and need to go thru simclr
+                    # --- if not headless --- #
                     if self.config['headless'] is False:
-                         simclr_outputs = self.saved_model(inputs, trainable=False)
-
-                         x = self.w2_dense0_layer(simclr_outputs['final_avg_pool'])
-                         x = self.w2_dense1_layer(x)
-                         semantic_output = self.semantic_layer(x)
-
-                         # We only return semantic output
-                         # when eval trained models
-                         if return_semantic is True:
-                              return semantic_output
-                         # When training full model,  we include the classifier.
-                         else:
-                              classify_output = self.classify_layer(semantic_output)
-                              return semantic_output, classify_output
+                         inputs = self.saved_model(inputs, trainable=False)['final_avg_pool']
                     
-                    # inputs are simclr outputs, directly go thru dense layers.
+                    # --- regardless of headless, the rest is the same --- #
+                    x = self.w2_dense0_layer(inputs)
+                    x = self.w2_dense1_layer(x)
+                    semantic_output = self.semantic_layer(x)
+
+                    # We only return semantic output
+                    # when eval trained models
+                    if return_semantic is True:
+                         return semantic_output
+                    # When training full model,  we include the classifier.
                     else:
-                         x = self.w2_dense0_layer(inputs)
-                         x = self.w2_dense1_layer(x)
-                         semantic_output = self.semantic_layer(x)
-
-                         # We only return semantic output
-                         # when eval trained models
-                         if return_semantic is True:
-                              return semantic_output
-                         # When training full model,  we include the classifier.
-                         else:
+                         if config['mixed_precision'] is False:
                               classify_output = self.classify_layer(semantic_output)
-                              return semantic_output, classify_output
-
+                         else:
+                              # due to mix precision, we do in two steps.
+                              logits = self.classify_layer(semantic_output)
+                              print(f'[Check] logits.dtype = {logits.dtype.name}')
+                              classify_output = self.softmax_layer(logits)
+                              print(f'[Check] softmax.dtype = {classify_output.dtype.name}')
+                         return semantic_output, classify_output
           return LangModel(config, return_semantic)
+
 
      elif config['front_end'] == 'vgg16':
 

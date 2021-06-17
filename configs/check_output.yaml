@@ -1,0 +1,18 @@
+config_version: check_output
+front_end: 'simclr'
+path: 'r50_1x_sk0/saved_model/'
+w2_depth: 2
+lr: 0.00003
+patience: 5
+batch_size: 64    # had to, 128 cause GPU bottlebeck
+epochs: 500
+generator_seed: 42
+validation_split: 0.1
+generator_type: simclr_finegrain
+kernel_initializer: glorot_normal
+kernel_seed: 42
+headless: True
+mixed_precision: False
+
+# Use tfrecords and headless
+# Batch_size 64

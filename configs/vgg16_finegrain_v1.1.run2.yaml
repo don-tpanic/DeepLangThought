@@ -9,3 +9,5 @@ epochs: 500
 generator_seed: 42
 validation_split: 0.1
 generator_type: vgg16_finegrain
+
+layer: fc2

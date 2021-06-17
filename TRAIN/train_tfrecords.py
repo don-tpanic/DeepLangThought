@@ -1,26 +1,26 @@
 import time
 import numpy as np
 import tensorflow as tf
+from tensorflow.keras import backend as K
+
 from keras_custom.models.language_model import lang_model_contrastive
 from TRAIN.utils.data_utils import load_config, specific_callbacks, data_directory
 from TRAIN.utils.saving_utils import save_model_weights
-# from TRAIN.utils import load_tfrecords
 from keras_custom.generators import load_tfrecords
 
 
 def execute(config):
-    model = lang_model_contrastive(config)
-    # prev we didn't have to build, because now
-    # we are headless.
-    model.build(input_shape=(1, 2048))
-    # lossWs = [1, 2, 3, 5, 7, 10, 0.1, 0]
-    lossWs = [2, 3, 1]
-    superordinates = [None]
+    
+    lossWs = [1, 2, 3, 5, 7, 10, 0.1, 0]
+
+    if 'finegrain' in config['config_version']:
+        superordinates = [None]
+    else:
+        superordinates = ['reptile', 'canidae', 'bird', 'amphibian', 'primate']
     if 'finegrain' in config['config_version'] and len(superordinates) > 1:
         print(f'Error')
         exit()
 
-    # TODO. should probably go into config.
     directory = data_directory(part='train', tfrecords=True)
     classes = None
     batch_size = config['batch_size']
@@ -33,6 +33,10 @@ def execute(config):
             
             # for every lossW, we restart the timer.
             start_time = time.time()
+            model = lang_model_contrastive(config)
+            # prev we didn't have to build, because now
+            # we are headless.
+            model.build(input_shape=(1, 2048))
             model.compile(tf.keras.optimizers.Adam(lr=config['lr']),
                         loss=['mse', 'sparse_categorical_crossentropy'],
                         loss_weights=[1, lossW],
@@ -58,7 +62,7 @@ def execute(config):
             earlystopping, tensorboard = specific_callbacks(config=config, lossW=lossW)
 
             # QUESTION: does val_dataset need repeat()?
-            # QUESTION: .repeat(NUM_EPOCHS)?
+            # as in .repeat(NUM_EPOCHS)?
             model.fit(train_dataset.repeat(config['epochs']),
                     epochs=config['epochs'], 
                     verbose=1, 
@@ -72,6 +76,7 @@ def execute(config):
 
             # save trained weights
             save_model_weights(model=model, config=config, lossW=lossW)
+            K.clear_session()
 
             # time it
             end_time = time.time()
