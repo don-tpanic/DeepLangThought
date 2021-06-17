@@ -1,6 +1,8 @@
 import time
 import numpy as np
 import tensorflow as tf
+from tensorflow.keras import backend as K
+
 from keras_custom.models.language_model import lang_model_contrastive
 from TRAIN.utils.data_utils import load_config, specific_callbacks, data_directory
 from TRAIN.utils.saving_utils import save_model_weights
@@ -9,8 +11,7 @@ from keras_custom.generators import load_tfrecords
 
 def execute(config):
     
-    # lossWs = [1, 2, 3, 5, 7, 10, 0.1, 0]
-    lossWs = [7, 10, 0.1, 0]
+    lossWs = [1, 2, 3, 5, 7, 10, 0.1, 0]
 
     if 'finegrain' in config['config_version']:
         superordinates = [None]
