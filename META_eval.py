@@ -1,6 +1,5 @@
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '2'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import argparse
@@ -34,15 +33,18 @@ parser.add_argument('-s', '--semantics', dest='semantics', type=str2bool)
 parser.add_argument('-m', '--matrices', dest='matrices', type=str2bool)
 parser.add_argument('-a', '--accuracy', dest='accuracy', type=str2bool)
 parser.add_argument('-p', '--plot', dest='plot', type=str2bool)
+parser.add_argument('-gpu', '--gpu', dest='gpu_index')
 args = parser.parse_args()
 
 '''
 Example command:
-    python META_eval.py -l finegrain -f simclr -v v1.1.run1 -s True -m True
+    python META_eval.py -l finegrain -f simclr -v v3.1.run12 -s True -m True -gpu 0
 '''
 
 if __name__ == '__main__':
     
+    os.environ["CUDA_VISIBLE_DEVICES"]= f'{args.gpu_index}'
+
     config_version = f'{args.frontend}_{args.label}_{args.version}'
     config = load_config(config_version)
 
