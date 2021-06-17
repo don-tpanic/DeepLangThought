@@ -290,8 +290,8 @@ def execute(config):
     results_path = f'RESULTS/revision_1/{config_version}'
     if not os.path.exists(results_path):
         os.makedirs(results_path)
-    # Exp1_AB(config, lossWs, results_path)
-    Exp2_AB_simclr(config, lossWs, results_path)
+    Exp1_AB(config, lossWs, results_path)
+    # Exp2_AB_simclr(config, lossWs, results_path)
     
     
 

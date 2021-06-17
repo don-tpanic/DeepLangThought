@@ -35,9 +35,8 @@ def execute(config,
     if 'finegrain' in config['config_version']:
         dfs = []
     else:
-        # dfs = ['amphibian', 'bird', 'canidae', 'primate', 'reptile']
-        dfs = ['canidae', 'primate', 'reptile']
-    lossWs = [7, 10]
+        dfs = ['amphibian', 'bird', 'canidae', 'primate', 'reptile']
+    lossWs = [0, 0.1, 1, 2, 3, 5, 7, 10]
     # -------------------------------------------
     for lossW in lossWs:
         
