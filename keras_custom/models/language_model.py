@@ -231,25 +231,23 @@ def lang_model_contrastive(config, return_semantic=False):
 
      elif config['front_end'] == 'vgg16':
 
-          w2_depth = config['w2_depth']
+          # NOTE. after this update, vgg16 only supports `headless` mode.
+          # whereas simclr supports both. I see no point making vgg16
+          # headless=False compatible as that would be very slow in training.
+          # ideally, headless shouldn't even be an option.
+
           seed = 42
+          model = VGG16(weights='imagenet', include_top=True, input_shape=(224, 224, 3))
+          model.load_weights('VGG16_finetuned_fullmodelWeights.h5')
+          print('[Check] Loaded in fine tuned VGG16 weights.')
 
-          vgg = VGG16(weights='imagenet', include_top=True, input_shape=(224, 224, 3))
-          vgg.load_weights('VGG16_finetuned_fullmodelWeights.h5')
-          print('loaded in fine tuned VGG16 weights.')
-
-          x = vgg.input
-          # we can change the second index to
-          # remove some layers such as the FC layers.
-
-          # e.g. [1, :-1] --> keep FC1,2
-          # e.g. [1, :-3] --> remove FC1,2
-          for layer in vgg.layers[1:-1]:
-               layer.trainable = False
-               x = layer(x)
-
+          # we train a number of FCs from this layer's reprs
+          layer_reprs_shape = model.get_layer(config['layer']).output.shape[1:]
+          # we need an input layer with correct shape
+          inputs = Input(shape=layer_reprs_shape)
+          x = inputs
           # add a number of Dense layer between FC2 and semantic
-          for i in range(w2_depth):
+          for i in range(config['w2_depth']):
                x = Dense(4096, activation='relu', name=f'w2_dense_{i}',
                          kernel_initializer=keras.initializers.glorot_normal(seed=seed))(x)
           
@@ -259,15 +257,17 @@ def lang_model_contrastive(config, return_semantic=False):
 
           # if return semantics, we intercept at semantic layer
           if return_semantic is True:
-               model = Model(inputs=vgg.input, outputs=semantic_output)
+               model = Model(inputs=inputs, outputs=semantic_output)
           # if False, we have two outputs.
           else:
                # 768 * 1000 + 1000 = 769000
                discrete_output = Dense(1000, activation='softmax', name='discrete_layer',
                          kernel_initializer=keras.initializers.glorot_normal(seed=seed))(semantic_output)
-               model = Model(inputs=vgg.input, outputs=[semantic_output, discrete_output])
+               model = Model(inputs=inputs, outputs=[semantic_output, discrete_output])
+
+               # when load the entire model, means
+
           model.summary()
-          #plot_model(model, to_file='lang_model.png')
           return model
 
 
