@@ -18,9 +18,8 @@ script, all processing related to versions of the models
 are done already. All plotting functions are model-agnostic.
 """
 
-# rc('text', usetex=True)
+rc('text', usetex=True)
 plt.rcParams.update({'font.size': 20})
-
 
 
 def Exp1_AB(config, lossWs, results_path, part='val_white', sup=None):
@@ -47,7 +46,7 @@ def Exp1_AB(config, lossWs, results_path, part='val_white', sup=None):
     ax[0].scatter(np.arange(len(lossWs)), correlations)
     ax[0].set_xticks(np.arange(len(lossWs)))
     ax[0].set_xticklabels(lossWs)
-    # ax[0].set_xlabel(r'Labelling pressure ($\beta$)')
+    ax[0].set_xlabel(r'Labelling pressure ($\beta$)')
     ax[0].set_ylabel('Spearman correlations')
     ax[0].set_title('(A)')
     ax[0].grid(True)
@@ -64,7 +63,7 @@ def Exp1_AB(config, lossWs, results_path, part='val_white', sup=None):
         all_uptris.append(subMtx_uptri)
 
     violinplot(data=all_uptris, cut=-5, linewidth=.8, gridsize=300)
-    # ax[1].set_xlabel(r'Labelling pressure ($\beta$)')
+    ax[1].set_xlabel(r'Labelling pressure ($\beta$)')
     ax[1].set_xticks(np.arange(len(lossWs)))
     ax[1].set_xticklabels(lossWs)
     ax[1].set_ylabel('Pairwise class distance')
@@ -163,7 +162,7 @@ def Exp2_AB(config, lossWs, results_path, part='val_white', sup=None):
     print('all_ratios.shape = ', all_ratios.shape)
     average_ratios = np.mean(all_ratios, axis=0)
     ax[1].plot(np.arange(len(lossWs)), average_ratios, label='average')
-    # ax[1].set_xlabel(r'Labelling pressure ($\beta$)')
+    ax[1].set_xlabel(r'Labelling pressure ($\beta$)')
     ax[1].set_ylabel('Distance ratio')
     ax[1].grid(True)
     ax[1].set_title('(B)')
@@ -291,9 +290,11 @@ def execute(config):
     results_path = f'RESULTS/revision_1/{config_version}'
     if not os.path.exists(results_path):
         os.makedirs(results_path)
-        
-    # Exp1_AB(config, lossWs, results_path)
-    Exp2_AB(config, lossWs, results_path)
+
+    if 'finegrain' in config_version:
+        Exp1_AB(config, lossWs, results_path)
+    else:
+        Exp2_AB(config, lossWs, results_path)
     
     
 
