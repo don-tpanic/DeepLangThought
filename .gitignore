@@ -13,6 +13,7 @@ resources_val_white/_embedding_matrices
 resources_val_white/_cosine_dist_matrices
 resources_val_white/_L2_matrices
 simclr_reprs/
+vgg16_reprs/
 out_holder/
 *.zip
 psiz*
