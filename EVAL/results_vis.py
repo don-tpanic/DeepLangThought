@@ -137,7 +137,7 @@ def Exp2_AB(config, lossWs, results_path, part='val_white', sup=None):
         for i in range(len(lossWs)):
             lossW = lossWs[i]
             # the entire 1k*1k matrix
-            distMtx = np.load(f'resources_{part}/_L2_matrices/{config_version}/lossW={lossW}-sup={df}.npy')
+            distMtx = np.load(f'resources_{part}/_L2_matrices/{config_version}/lossW={lossW}-{df}.npy')
             # the dogs matrix      
             subMtx = distMtx[indices, :][:, indices]
             # the uptri of dogs matrix
