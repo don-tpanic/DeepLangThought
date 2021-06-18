@@ -21,7 +21,9 @@ def execute(config):
         print(f'Error')
         exit()
 
-    directory = data_directory(part='train', tfrecords=True)
+    directory = data_directory(part='train', 
+                              front_end=config['front_end'], 
+                              tfrecords=True)
     classes = None
     batch_size = config['batch_size']
     validation_split = config['validation_split']
@@ -34,9 +36,13 @@ def execute(config):
             # for every lossW, we restart the timer.
             start_time = time.time()
             model = lang_model_contrastive(config)
-            # prev we didn't have to build, because now
-            # we are headless.
-            model.build(input_shape=(1, 2048))
+
+            if config['front_end'] == 'simclr':
+                # prev we didn't have to build, because now
+                # we are headless.
+                model.build(input_shape=(1, 2048))
+            # elif vgg16, no need to build as Input() layer is used in model def.
+
             model.compile(tf.keras.optimizers.Adam(lr=config['lr']),
                         loss=['mse', 'sparse_categorical_crossentropy'],
                         loss_weights=[1, lossW],
