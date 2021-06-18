@@ -72,11 +72,16 @@ def execute(config,
                     # get trained model intercepted as `semantic_layer`
                     model = ready_model(config=config, 
                                         lossW=lossW)
-
-                    grab_activations(model=model, 
-                                    part=part, 
-                                    config=config,
-                                    lossW=lossW)
+                    if config['headless'] is False:
+                        grab_activations(model=model, 
+                                        part=part, 
+                                        config=config,
+                                        lossW=lossW)
+                    else:
+                        grab_activations_tfrecords(model=model,
+                                                    part=part,
+                                                    config=config,
+                                                    lossW=lossW)
 
                 if compute_distance_matrices:
                     embedding_n_distance_matrices(

@@ -25,7 +25,7 @@ plt.rcParams.update({'font.size': 20})
 
 def Exp1_AB(config, lossWs, results_path, part='val_white', sup=None):
     """
-    Finegrain experiment figures.
+    Finegrain results plotter.
     """
     ##### A ######
     config_version = config['config_version']
@@ -74,8 +74,9 @@ def Exp1_AB(config, lossWs, results_path, part='val_white', sup=None):
     print('[Check] Plotted at:', os.path.join(results_path, 'Exp1_AB.pdf'))
 
 
-def Exp2_AB_simclr(config, lossWs, results_path, part='val_white', sup=None):
+def Exp2_AB(config, lossWs, results_path, part='val_white', sup=None):
     """
+    Coarsegrain results plotter.
     """
     config_version = config['config_version']
     true_bert = np.load(f'resources_{part}/_cosine_dist_matrices/bert.npy')
@@ -174,9 +175,9 @@ def Exp2_AB_simclr(config, lossWs, results_path, part='val_white', sup=None):
     print('[Check] Plotted at:', os.path.join(results_path, 'Exp2_AB.pdf'))
 
 
-def Exp2_AB(lossWs, mtx_type='cosine_dist', part='val_white', version='11-11-20'):
-    """
-    """
+# NOTE. Plotter prior using unsuprvised front end.
+# TODO. Need deprecate n use the new plotter that should be compatible to both front end.
+def Exp2_AB_old(lossWs, mtx_type='cosine_dist', part='val_white', version='11-11-20'):
     print(f'mtx type = {mtx_type}')
 
     true_bert = np.load(f'RESRC_{part}/_{mtx_type}_matrices/bert.npy')
@@ -290,8 +291,9 @@ def execute(config):
     results_path = f'RESULTS/revision_1/{config_version}'
     if not os.path.exists(results_path):
         os.makedirs(results_path)
-    Exp1_AB(config, lossWs, results_path)
-    # Exp2_AB_simclr(config, lossWs, results_path)
+        
+    # Exp1_AB(config, lossWs, results_path)
+    Exp2_AB(config, lossWs, results_path)
     
     
 
