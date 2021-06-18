@@ -11,7 +11,7 @@ validation_split: 0.1
 generator_type: vgg16_finegrain
 
 layer: flatten
-mixed_precision: True
+mixed_precision: False
 
 
 # This is in fact the original converted to this format.
