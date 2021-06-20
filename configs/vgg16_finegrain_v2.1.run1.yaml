@@ -11,6 +11,7 @@ validation_split: 0.1
 generator_type: vgg16_finegrain
 
 layer: flatten
+headless: True
 mixed_precision: False
 
 

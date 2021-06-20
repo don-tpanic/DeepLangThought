@@ -1,4 +1,4 @@
-config_version: vgg16_finegrain_v2.1.run2
+config_version: vgg16_coarsegrain_v2.1.run1
 front_end: 'vgg16'
 path: 
 w2_depth: 2
@@ -8,7 +8,7 @@ batch_size: 128
 epochs: 500
 generator_seed: 42
 validation_split: 0.1
-generator_type: vgg16_finegrain
+generator_type: vgg16_coarsegrain
 
 layer: flatten
 mixed_precision: False
@@ -16,5 +16,3 @@ mixed_precision: False
 
 # This is in fact the original converted to this format.
 # with the difference being now we re-train 2 FCs from scratch.
-# Uses TF2.2, `attn_tf22_py37`
-# mixed_precision OFF because in TF2.2 it is done on opt.
