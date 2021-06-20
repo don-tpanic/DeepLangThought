@@ -74,7 +74,9 @@ def data_directory(part, front_end, tfrecords=False):
                 data_dir = f'/mnt/fast-data{server_num}/datasets/ILSVRC/2012/clsloc/{part}'
         else:
             if tfrecords:
-                data_dir = f'/fast-data{server_num}/datasets/ken/{front_end}_reprs/{part}'
+                # NOTE. temp for vgg16
+                # data_dir = f'/fast-data{server_num}/datasets/ken/{front_end}_reprs/{part}'
+                data_dir = f'{front_end}_reprs/{part}'
             else:
                 data_dir = f'/fast-data{server_num}/datasets/ILSVRC/2012/clsloc/{part}'
     return data_dir
