@@ -18,6 +18,7 @@ out_holder/
 *.zip
 psiz*
 corr_analysis/
+.vscode/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
