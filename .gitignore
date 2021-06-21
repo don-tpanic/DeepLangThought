@@ -6,7 +6,7 @@ _trained_weights/
 *.out
 ._*
 *.h5
-#r50*/
+r50*/
 vgg16/
 vscode/
 resources_val_white/_embedding_matrices
