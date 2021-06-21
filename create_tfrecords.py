@@ -1,22 +1,34 @@
 import os
 os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
-os.environ["CUDA_VISIBLE_DEVICES"]= '1'
+os.environ["CUDA_VISIBLE_DEVICES"]= '0'
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
+import argparse
 import numpy as np 
 import tensorflow as tf
+from tensorflow.keras.models import Model
+from tensorflow.keras.applications.vgg16 import VGG16
+
 from TRAIN.utils.data_utils import data_directory, load_classes
 from keras_custom.generators import simclr_preprocessing
 
 """
-Create all Imageget's simclr outputs as .tfrecord
-
-# TODO. Do we need word_emb for val_white?
+Create all Imageget's vgg | simclr | or other frontend
+outputs as .tfrecord
 """
 
-def create_tfrecords():
-    top_path = 'simclr_reprs/'
-    model = load_model()
+def create_tfrecords(model_name):
+    """
+    inputs:
+    -------
+        model_name: vgg16 | simclr
+
+    return
+    -------
+        Directories of model reprs of the given model according to ImageNet
+    """
+    top_path = f'{model_name}_reprs/'
+    model = load_model(model_name)
     wordvec_mtx = np.load('data_local/imagenet2vec/imagenet2vec_1k.npy')
     parts = ['val_white', 'train']
 
@@ -25,7 +37,8 @@ def create_tfrecords():
         wnids, labels, _ = load_classes(num_classes=1000, df='ranked')
 
         for wnid, label in zip(wnids, labels):
-            create_single_tfrecord(model, 
+            create_single_tfrecord(model,
+                                   model_name, 
                                    wordvec_mtx, 
                                    top_path, 
                                    directory, 
@@ -36,6 +49,7 @@ def create_tfrecords():
 
 
 def create_single_tfrecord(model, 
+                           model_name,
                            wordvec_mtx, 
                            top_path, 
                            directory, 
@@ -71,11 +85,23 @@ def create_single_tfrecord(model,
                 # full path to load one image.
                 image_path = os.path.join(class_path, image_name)
 
-                # load, preprocess image and load into simclr.
-                x = tf.keras.preprocessing.image.load_img(image_path)
-                x = tf.keras.preprocessing.image.img_to_array(x)
-                x = tf.convert_to_tensor(x, dtype=tf.uint8)
-                x = simclr_preprocessing._preprocess(x, is_training=False)
+                # model unique preprocessing.
+                if model_name == 'simclr':
+                    x = tf.keras.preprocessing.image.load_img(image_path)
+                    x = tf.keras.preprocessing.image.img_to_array(x)
+                    x = tf.convert_to_tensor(x, dtype=tf.uint8)
+                    x = simclr_preprocessing._preprocess(x, is_training=False)
+
+                elif model_name == 'vgg16':
+                    x = tf.keras.preprocessing.image.load_img(
+                            image_path,
+                            color_mode='rgb',
+                            target_size=(224,224),
+                            interpolation='nearest'
+                        )
+                    x = tf.keras.preprocessing.image.img_to_array(x)
+                    x = tf.keras.applications.vgg16.preprocess_input(x)
+
                 x = tf.reshape(x, [1, x.shape[0], x.shape[1], x.shape[2]])
                 x = model.predict(x)[0]  # otherwise len(x)=1
 
@@ -87,28 +113,42 @@ def create_single_tfrecord(model,
                 writer.write(example)
 
 
-def load_model():
+def load_model(model_name):
     """
     Purpose:
     --------
-        Load the pretrained simclr model at `final_avg_pool` layer.
+        Load the pretrained fontend model till a given layer.
+        For now we support `vgg16`[layer=flatten], `simclr`[layer=final_avg_pool]
+        For now, layers are hardcoded but can be easily adjusted.
     """
-    class SimclrFrontEnd(tf.keras.Model):
-        def __init__(self):
-            """
-            Load in the pretrained simclr
-            And add the same layers as in previous version.
-            """
-            super(SimclrFrontEnd, self).__init__()
-            self.saved_model = tf.saved_model.load('r50_1x_sk0/saved_model/')
+    if model_name == 'simclr':
+        layer = 'final_avg_pool'
+        class SimclrFrontEnd(tf.keras.Model):
+            def __init__(self):
+                """
+                Load in the pretrained simclr
+                And add the same layers as in previous version.
+                """
+                super(SimclrFrontEnd, self).__init__()
+                self.saved_model = tf.saved_model.load('r50_1x_sk0/saved_model/')
 
-        def call(self, inputs):
-            """
-            Straightforward feedforward net
-            """
-            simclr_outputs = self.saved_model(inputs, trainable=False)
-            return simclr_outputs['final_avg_pool']
-    return SimclrFrontEnd()
+            def call(self, inputs):
+                """
+                Straightforward feedforward net
+                """
+                simclr_outputs = self.saved_model(inputs, trainable=False)
+                return simclr_outputs[layer]
+        return SimclrFrontEnd()
+    
+    elif model_name == 'vgg16':
+        layer = 'flatten'
+        model = VGG16(weights='imagenet', include_top=True, input_shape=(224, 224, 3))
+        model.load_weights('VGG16_finetuned_fullmodelWeights.h5')
+
+        layer_reprs = model.get_layer(layer).output
+        partial_model = Model(inputs=model.input, outputs=layer_reprs)
+        partial_model.summary()
+        return partial_model
 
 
 def _bytes_feature(value):
@@ -142,4 +182,8 @@ def serialize_example(x, x_length,
 
 
 if __name__ == '__main__':
-    create_tfrecords()
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--model', dest='model')
+    args = parser.parse_args()
+
+    create_tfrecords(model_name=args.model)

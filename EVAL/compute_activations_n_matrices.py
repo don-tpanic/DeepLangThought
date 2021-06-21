@@ -95,11 +95,8 @@ def execute(config,
 
 def grab_activations_tfrecords(model, part, config, lossW):
     config_version = config['config_version']
-    if 'vgg16' in config_version:
-        print(f'tfrecords not yet supporting models other than simclr.')
-        exit()
     wordvec_mtx = np.load('data_local/imagenet2vec/imagenet2vec_1k.npy')
-    directory = data_directory(part=part, tfrecords=True)
+    directory = data_directory(part=part, front_end=config['front_end'], tfrecords=True)
     wnids, indices, categories = load_classes(num_classes=1000, df='ranked')
 
     for i in range(len(wnids)):
