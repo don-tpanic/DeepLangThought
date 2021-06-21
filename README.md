@@ -1,17 +1,28 @@
-# Source code for paper [A Deep Learning Account of How Language Affects Thought](https://psyarxiv.com/9xwjh)
+# A Deep Learning Account of How Language Affects Thought
+\[[Original paper](https://psyarxiv.com/9xwjh)\]
 
-
-### Set up environment
-`conda create --name myenv --file conda_envs/attn_tf22_py37.txt`,
-`pip install tensorflow-gpu==2.2.0` or `conda install tensorflow-gpu==2.2.0`
-
+### Environment setup
+```
+conda env create -f conda_envs/env.yml
+```
  
-### Replicate results
-`python META_eval.py --option eval` for recreating intermediate outputs for plotting.
-`python META_eval.py --option plot` for recreating result figures on the paper.
+### Reproducing results 
+* This command uses pre-computed intermediate results stored in `resources_val_white/`.
+* `label_type` should be set to `finegrain` or `coarsegrain`.
+```
+python main_eval.py -l <label_type> -f simclr -v v3.1.run12 -p True -gpu <num_gpu>
+```
 
-
-### Train models
-`python META_train.py --option finegrain` for training models correspond to fine-grained labelling models
-`python META_train.py --option coarsegrain` for training models correspond to coarse-grained labelling models.
-
+### Reproducing results from scratch
+* Prepare dataset for training: 
+```
+python data.py --model simclr
+```
+* Train the models
+```
+python main_train.py -l <label_type> -f simclr -v v3.1.run12 -r True -gpu <num_gpu>
+```
+* Evaluate trained models and plot results
+```
+python main_eval.py -l <label_type> -f simclr -v v3.1.run12 -s True -m True -p True -gpu <num_gpu>
+```
