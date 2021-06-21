@@ -3,7 +3,6 @@ os.environ["CUDA_DEVICE_ORDER"] = "PCI_BUS_ID"
 os.environ['TF_CPP_MIN_LOG_LEVEL'] = '3'
 
 import argparse
-from TRAIN import train
 from TRAIN import train_tfrecords
 from TRAIN.utils.data_utils import load_config
 
@@ -53,5 +52,3 @@ if __name__ == '__main__':
     
     if args.tfrecords:
         train_tfrecords.execute(config)
-    else:
-        train.execute(config)
