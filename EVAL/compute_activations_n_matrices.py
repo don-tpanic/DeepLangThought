@@ -11,7 +11,7 @@ from tensorflow.keras.applications.vgg16 import preprocess_input
 
 from EVAL.utils.data_utils import data_directory, load_classes
 from EVAL.utils.model_utils import ready_model
-from keras_custom.generators.generator_wrappers import data_generator_v2
+# from keras_custom.generators.generator_wrappers import data_generator_v2
 from keras_custom.generators import load_tfrecords
 
 

@@ -38,7 +38,7 @@ args = parser.parse_args()
 
 '''
 Example command:
-    python META_eval.py -l finegrain -f simclr -v v3.1.run12 -s True -m True -gpu 0
+    python main_eval.py -l finegrain -f simclr -v v3.1.run12 -s True -m True -gpu 0
 '''
 
 if __name__ == '__main__':

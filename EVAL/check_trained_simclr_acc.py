@@ -8,7 +8,7 @@ import tensorflow as tf
 from tensorflow.keras.optimizers import Adam
 
 from keras_custom.models.language_model import lang_model_contrastive
-from keras_custom.generators.generator_wrappers import data_generator_v2
+# from keras_custom.generators.generator_wrappers import data_generator_v2
 from TRAIN.utils.data_utils import load_classes, data_directory, load_config
 
 
