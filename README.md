@@ -1,5 +1,5 @@
 # A Deep Learning Account of How Language Affects Thought
-\[[Original paper](https://psyarxiv.com/9xwjh)\]
+\[[Original paper](https://www.tandfonline.com/doi/full/10.1080/23273798.2021.2001023)\]
 
 ### Environment setup
 ```
