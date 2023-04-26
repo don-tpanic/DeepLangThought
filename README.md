@@ -34,3 +34,18 @@ python main_train.py -l <label_type> -f simclr -v v3.1.run12 -r True -gpu <num_g
 ```
 python main_eval.py -l <label_type> -f simclr -v v3.1.run12 -s True -m True -p True -gpu <num_gpu>
 ```
+
+### Attribution
+```
+@article{Luo2021DeepLangThought,
+    author = {Xiaoliang Luo and Nicholas J. Sexton and Bradley C. Love},
+    title = {A deep learning account of how language affects thought},
+    journal = {Language, Cognition and Neuroscience},
+    volume = {0},
+    number = {0},
+    pages = {1-10},
+    year  = {2021},
+    publisher = {Routledge},
+    doi = {10.1080/23273798.2021.2001023},
+}
+```
