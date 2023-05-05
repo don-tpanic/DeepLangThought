@@ -14,23 +14,25 @@ python main_eval.py -l <label_type> -f simclr -v v3.1.run12 -p True -gpu <num_gp
 ```
 
 ### Reproducing results from scratch
-* Download pre-trained SimCLR (i.e., unsupervised front end) model
+1. Download pre-trained SimCLR (i.e., unsupervised front end) model
 ```
 gsutil -m cp -r \
   "gs://simclr-checkpoints-tf2/simclrv2/pretrained/r50_1x_sk0/" \
   .
 ```
+* If you get `AttributeError: module 'pyparsing' has no attribute 'downcaseTokens'` from running the above code, <br />
+see this [issue](https://github.com/don-tpanic/DeepLangThought/issues/7) for a workaround.
 * More info about SimCLR model can be found at the [Official repo for SimCLR](https://github.com/google-research/simclr/tree/master/tf2)
   
-* Prepare dataset for training (a full path to ImageNet-2012 should be set in `TRAIN/utils/data_utils.py`)
+2. Prepare dataset for training (a full path to ImageNet-2012 should be set in `TRAIN/utils/data_utils.py`)
 ```
 python data.py --model simclr
 ```
-* Train the models
+3. Train the models
 ```
 python main_train.py -l <label_type> -f simclr -v v3.1.run12 -r True -gpu <num_gpu>
 ```
-* Evaluate trained models and plot results
+4. Evaluate trained models and plot results
 ```
 python main_eval.py -l <label_type> -f simclr -v v3.1.run12 -s True -m True -p True -gpu <num_gpu>
 ```
